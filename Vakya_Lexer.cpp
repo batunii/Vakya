@@ -1,5 +1,4 @@
 #include "Token_Utils.hpp"
-#include <cstddef>
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -122,6 +121,7 @@ public:
         if (this->advance() == '>') {
           this->t_list.emplace_back(TokenType::TT_NXT);
         } else {
+					this->t_list.emplace_back(TokenType::TT_DH);
           this->next_pos--;
         }
         break;
@@ -144,7 +144,7 @@ public:
   }
 };
 
-std::ostream &operator<<(std::ostream &os, Tokens &token) {
+inline std::ostream &operator<<(std::ostream &os, Tokens &token) {
 
   if (token.t_val.empty())
     os << token.t_type;
@@ -153,7 +153,7 @@ std::ostream &operator<<(std::ostream &os, Tokens &token) {
   return os;
 }
 
-std::ostream &operator<<(std::ostream &os, std::vector<Tokens> &list) {
+inline std::ostream &operator<<(std::ostream &os, std::vector<Tokens> &list) {
   if (list.empty())
     os << "The list is empty \n";
   else {
@@ -164,19 +164,4 @@ std::ostream &operator<<(std::ostream &os, std::vector<Tokens> &list) {
     os << " ]";
   }
   return os;
-}
-int main() {
-  std::vector<Tokens> exit_code = {Tokens(TokenType::TT_ATTR, "exit"),
-                                   Tokens(TokenType::TT_LP),
-                                   TokenType(TokenType::TT_RP)};
-  while (true) {
-    std::cout << "Vakya>> ";
-    std::string code;
-    std::getline(std::cin, code);
-    Lexer lexer(code);
-    lexer.make_tokens();
-    std::cout << lexer.t_list << "\n";
-    if (lexer.t_list == exit_code)
-      break;
-  }
 }

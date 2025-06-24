@@ -1,5 +1,5 @@
 
-SRC = Token_Utils.cpp Vakya_Lexer.cpp
+SRC = Token_Utils.cpp Vakya_Lexer.cpp Compiler.cpp
 CXX = g++
 FLAGS = -Wall -Wextra -std=c++17
 OBJ = $(SRC:.cpp=.o)
