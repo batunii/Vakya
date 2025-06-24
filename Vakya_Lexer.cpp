@@ -46,12 +46,16 @@ public:
     }
     this->t_list.emplace_back(TokenType::TT_STR, args);
   }
-  bool is_keyword(std::string given_word) {
+  bool is_keyword_or_usr(std::string given_word) {
     auto it = keywords.find(given_word);
     if (it != keywords.end() && this->prev_token.t_type == TokenType::TT_AT) {
-			this->t_list.pop_back();
+      this->t_list.pop_back();
       this->t_list.emplace_back(it->second);
       return true;
+    } else if (this->prev_token.t_type == TokenType::TT_HH) {
+      this->t_list.pop_back();
+			this->t_list.emplace_back(TokenType::TT_USR, given_word);
+			return true;
     }
     return false;
   }
@@ -63,7 +67,7 @@ public:
       attr += this->curr_char;
       this->advance();
     }
-    if (!this->is_keyword(attr))
+    if (!this->is_keyword_or_usr(attr))
       this->t_list.emplace_back(TokenType::TT_ATTR, attr);
 
     this->next_pos--;

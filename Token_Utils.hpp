@@ -37,7 +37,8 @@ enum class TokenType {
   TT_DSC,
   TT_GRP,
   TT_ATTR,
-  TT_STR
+  TT_STR,
+	TT_USR
 };
 
 // Keyword token map (reserved words)
