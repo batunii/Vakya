@@ -133,6 +133,9 @@ public:
         this->advance();
         this->handle_quotes();
         break;
+      case '\n':
+        this->t_list.emplace_back(TokenType::TT_EOL);
+        break;
       default: {
         if (std::isalnum(this->curr_char))
           handle_string();
