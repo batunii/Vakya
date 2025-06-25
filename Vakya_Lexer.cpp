@@ -72,7 +72,7 @@ public:
     this->next_pos--;
   }
 
-  std::vector<Tokens> make_tokens() {
+  std::vector<Tokens>& make_tokens() {
     while (this->advance()) {
       switch (this->curr_char) {
       case '@':
