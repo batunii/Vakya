@@ -1,4 +1,4 @@
-#include "Vakya_Lexer.cpp"
+#include "Vakya_Lexer.hpp"
 #include <iostream>
 #include <string>
 
