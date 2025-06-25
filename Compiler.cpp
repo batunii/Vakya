@@ -1,5 +1,4 @@
-#include "Token_Utils.hpp"
-#include "Vakya_Lexer.cpp"
+#include "Vakya_Lexer.hpp"
 #include <iostream>
 #include <optional>
 #include <string>
