@@ -1,37 +1,42 @@
+#include "Token_Utils.hpp"
 #include "Vakya_Lexer.hpp"
 #include <iostream>
 #include <optional>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 class Prompt {
 private:
-  std::vector<Tokens> &token_list;
+  Lexer &lexer;
   std::string action;
   bool is_multistep;
   std::string topic;
   std::vector<std::string> conditions;
   std::unordered_map<std::string, std::string> std_fmt_types = {
       {"table", "The user wants the output in a table format."}};
-  int current_token;
+  size_t current_token;
   std::optional<Tokens> next_token() {
-    ++current_token;
-    if (current_token < token_list.size())
-      return token_list[current_token];
+    if (current_token < lexer.t_list.size())
+      return lexer.t_list[current_token++];
     else
       return std::nullopt;
   }
   void do_called() {}
+  void on_called() {}
+  void pre_def_output() {}
+  void usr_def_output() {}
+  void fmt_called() {}
+  void cdn_called() {}
+  void add_step() {}
 
 public:
-  Prompt(std::vector<Tokens> &tokens) : token_list(tokens) {}
+  Prompt(Lexer &lexer) : lexer(lexer) { lexer.make_tokens(); }
   void start_compiler() {
     while (auto token = this->next_token()) {
       switch (token->t_type) {
       case TokenType::TT_DO: {
-        std::cout << "Do is called \n";
+        this->do_called();
         break;
+      }
+      case TokenType::TT_ON: {
       }
       default:
         std::cout << "Do not called \n";
@@ -41,9 +46,6 @@ public:
 };
 
 int main() {
-  std::vector<Tokens> exit_code = {Tokens(TokenType::TT_ATTR, "exit"),
-                                   Tokens(TokenType::TT_LP), TokenType::TT_RP};
-
   std::string code, line;
   std::cout << "Vakya (enter multiple lines, Ctrl+D to end input):\n";
   while (std::getline(std::cin, line)) {
@@ -53,7 +55,5 @@ int main() {
   Lexer lexer(code);
   lexer.make_tokens();
   std::cout << lexer.t_list << "\n";
-  Prompt().start_compiler(lexer.make_tokens());
-
   return 0;
 }

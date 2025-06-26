@@ -6,9 +6,10 @@
 class Tokens {
 public:
   TokenType t_type;
+  size_t location;
   std::string t_val;
   Tokens();
-  Tokens(TokenType, const std::string & = "");
+  Tokens(TokenType, size_t, const std::string & = "");
   bool operator==(const Tokens &) const;
 };
 
