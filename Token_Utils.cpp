@@ -74,6 +74,12 @@ std::string toString(TokenType type) {
     return "TT_STR";
 	case TokenType::TT_USR:
 		return "TT_USR";
+	case TokenType::TT_PAR:
+		return "TT_PAR";
+	case TokenType::TT_BL:
+		return "TT_BL";
+	case TokenType::TT_LST:
+		return "TT_LST";
   default:
     return "ILLEGAL";
   }
