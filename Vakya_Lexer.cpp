@@ -13,12 +13,11 @@ bool Tokens::operator==(const Tokens &other) const {
 }
 
 Lexer::Lexer(std::string &code_i)
-    : code(code_i), t_list(std::vector<Tokens>()), curr_char('\0'),
-      next_pos(-1), prev_token() {}
+    : code(code_i), t_list(std::vector<Tokens>()), curr_char('\0'), next_pos(0),
+      prev_token() {}
 char Lexer::advance() {
-  ++this->next_pos;
   if (this->next_pos < code.length())
-    this->curr_char = this->code[this->next_pos];
+    this->curr_char = this->code[this->next_pos++];
   else
     this->curr_char = '\0';
   if (this->t_list.size() > 0)
@@ -40,13 +39,19 @@ bool Lexer::is_keyword_or_usr(std::string &given_word) {
   if (it != keywords.end() && this->prev_token.t_type == TokenType::TT_AT) {
     this->t_list.pop_back();
     this->t_list.emplace_back(it->second,
-                              this->next_pos - (given_word.length()));
+                              this->next_pos - (given_word.length()) - 1);
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_HH) {
     this->t_list.pop_back();
-    this->t_list.emplace_back(
-        TokenType::TT_USR, this->next_pos - (given_word.length()), given_word);
+    this->t_list.emplace_back(TokenType::TT_USR,
+                              this->next_pos - (given_word.length()) - 1,
+                              given_word);
     return true;
+  } else if (this->prev_token.t_type == TokenType::TT_AT &&
+             it == keywords.end()) {
+    std::cout << "\'" << given_word << "\'"
+              << " is not a recognized system keyword at : "
+              << this->prev_token.location << ".\n";
   }
   return false;
 }
@@ -108,7 +113,12 @@ std::vector<Tokens> &Lexer::make_tokens() {
       this->t_list.emplace_back(TokenType::TT_CL, this->next_pos - 1);
       break;
     case ';':
-      this->t_list.emplace_back(TokenType::TT_SC, this->next_pos - 1);
+      if (this->advance() == ';')
+        this->t_list.emplace_back(TokenType::TT_EOP, this->next_pos - 2);
+      else {
+        this->t_list.emplace_back(TokenType::TT_SC, this->next_pos - 1);
+        this->next_pos--;
+      }
       break;
     case '-': {
       if (this->advance() == '>') {
@@ -127,7 +137,7 @@ std::vector<Tokens> &Lexer::make_tokens() {
       this->handle_quotes();
       break;
     case '\n':
-      this->t_list.emplace_back(TokenType::TT_EOL, this->next_pos);
+      this->t_list.emplace_back(TokenType::TT_EOL, this->next_pos-1);
       break;
     default: {
       if (std::isalnum(this->curr_char))

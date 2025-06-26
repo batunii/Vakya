@@ -50,6 +50,8 @@ std::string toString(TokenType type) {
     return "TT_EOL";
   case TokenType::TT_NXT:
     return "TT_NXT";
+	case TokenType::TT_EOP:
+		return "TT_EOP";
 
   // Keywords
   case TokenType::TT_DO:

@@ -6,7 +6,7 @@
 class Tokens {
 public:
   TokenType t_type;
-  size_t location;
+  size_t location =0;
   std::string t_val;
   Tokens();
   Tokens(TokenType, size_t, const std::string & = "");

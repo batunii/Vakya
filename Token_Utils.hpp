@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 enum class TokenType {
+  TT_ILL,
   // Symbols
   TT_AT,
   TT_HH,
@@ -26,6 +27,7 @@ enum class TokenType {
   TT_EQ,
   TT_NXT,
   TT_EOL,
+	TT_EOP,
 
   // Keywords
   TT_DO,
@@ -33,15 +35,15 @@ enum class TokenType {
   TT_FMT,
   TT_CDN,
   TT_TBL,
-	TT_PAR,
-	TT_BL,
-	TT_LST,
+  TT_PAR,
+  TT_BL,
+  TT_LST,
   TT_ASC,
   TT_DSC,
   TT_GRP,
   TT_ATTR,
   TT_STR,
-	TT_USR
+  TT_USR
 };
 
 // Keyword token map (reserved words)

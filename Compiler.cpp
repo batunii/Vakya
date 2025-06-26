@@ -1,40 +1,39 @@
 #include "Token_Utils.hpp"
 #include "Vakya_Lexer.hpp"
+#include "Vakya_Prompt.hpp"
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
-class Prompt {
+class AST {
 private:
   Lexer &lexer;
-  std::string action;
-  bool is_multistep;
-  std::string topic;
-  std::vector<std::string> conditions;
-
-  std::unordered_map<std::string, std::string> std_fmt_types = {
-      {"table", "The user wants the output in a table format."}};
+  std::vector<Prompt> prompts;
+  Prompt *curr_prompt;
+  bool end_of_line = false;
   size_t current_token = 0;
-  std::optional<Tokens> next_token() {
+  
+	std::optional<Tokens> next_token() {
     if (this->current_token < this->lexer.t_list.size())
       return this->lexer.t_list[this->current_token++];
     else
       return std::nullopt;
   }
   void do_called() {
-    bool line_ended = false;
+    this->curr_prompt = new Prompt(this->prompts.size() + 1);
     while (auto token = this->next_token()) {
-      if (line_ended)
+      if (this->end_of_line)
         break;
       switch (token->t_type) {
       case TokenType::TT_ATTR:
-        this->action = token->t_val;
+        this->curr_prompt->action = token->t_val;
         break;
       case TokenType::TT_USR:
-        this->is_multistep = true;
+        this->curr_prompt->step_name = token->t_val;
         break;
       case TokenType::TT_EOL:
-        line_ended = true;
+        this->end_of_line = true;
         break;
       default:
         std::cout << " You have entered wrong token at " << token->location
@@ -45,19 +44,18 @@ private:
   }
   void on_called() {
 
-    bool line_ended = false;
     while (auto token = this->next_token()) {
-      if (line_ended)
+      if (this->end_of_line)
         break;
       switch (token->t_type) {
       case TokenType::TT_ATTR:
-        this->topic = token->t_val;
+        this->curr_prompt->context = token->t_val;
         break;
       case TokenType::TT_USR:
         std::cout << "Multi Steps are coming in next update \n";
         break;
       case TokenType::TT_EOL:
-        line_ended = true;
+        this->end_of_line = true;
         break;
       default:
         std::cout << " You have entered wrong token at " << token->location
@@ -66,24 +64,34 @@ private:
       }
     }
   }
-  void pre_def_output() {}
-  void usr_def_output() {}
-  void ordering() {}
-  void meta_data() {}
-  void fmt_called() {
+  void pre_def_output() {
+    auto token = this->next_token();
+    if (!token || token->t_type != TokenType::TT_LP)
+      std::cout << "Error at "
+                << token.value_or(Tokens(TokenType::TT_ILL, 0)).location;
+    else {
+      auto token = this->next_token();
+      while (token && token->t_type != TokenType::TT_LP) {
+        this->curr_prompt->format_specifiers.emplace_back(token->t_val);
+				token = this->next_token();
+      }
+    };
+  }
+  void ordering() {
 
-    bool line_ended = false;
+	}
+  void meta_data() {}
+
+  void fmt_called() {
     while (auto token = this->next_token()) {
-      if (line_ended)
+      if (this->end_of_line)
         break;
       switch (token->t_type) {
       case TokenType::TT_TBL:
       case TokenType::TT_LST:
       case TokenType::TT_BL:
-        this->pre_def_output();
-        break;
       case TokenType::TT_USR:
-        this->usr_def_output();
+        this->pre_def_output();
         break;
       case TokenType::TT_NXT:
         this->ordering();
@@ -92,7 +100,7 @@ private:
         this->meta_data();
         break;
       case TokenType::TT_EOL:
-        line_ended = true;
+        this->end_of_line = true;
         break;
       default:
         std::cout << " You have entered wrong token at " << token->location
@@ -107,11 +115,13 @@ private:
   std::string make_the_prompt() { return ""; }
 
 public:
-  Prompt(Lexer &lexer) : lexer(lexer), current_token(0) {
+  AST(Lexer &lexer)
+      : lexer(lexer),prompts(std::vector<Prompt>()){
     std::cout << lexer.make_tokens() << "\n";
   }
   void start_compiler() {
     while (auto token = this->next_token()) {
+      this->end_of_line = false;
       switch (token->t_type) {
       case TokenType::TT_DO: {
         this->do_called();
@@ -135,7 +145,7 @@ int main() {
   }
 
   Lexer lexer(code);
-  Prompt prompt(lexer);
-  prompt.start_compiler();
+  AST ast_compiler(lexer);
+  ast_compiler.start_compiler();
   return 0;
 }
