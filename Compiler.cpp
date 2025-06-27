@@ -23,6 +23,12 @@ private:
     else
       return std::nullopt;
   }
+  std::optional<Tokens> peek_next_token(){
+    if(this->current_token <this->lexer.t_list.size()){
+      return this->lexer.t_list[this->current_token+1];}
+    else
+      return std::nullopt;
+  }
 
   void illegal_input(size_t location) {
     std::cout << "You have entered wrong token at " << location << "\n";
