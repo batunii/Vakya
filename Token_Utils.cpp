@@ -1,13 +1,13 @@
 #include "Token_Utils.hpp"
-#include<string>
-#include<unordered_map>
+#include <string>
+#include <unordered_map>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
     {"do", TokenType::TT_DO},     {"on", TokenType::TT_ON},
     {"fmt", TokenType::TT_FMT},   {"cdn", TokenType::TT_CDN},
     {"table", TokenType::TT_TBL}, {"asc", TokenType::TT_ASC},
-    {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP}};
-
+    {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP},
+    {"src", TokenType::TT_SRC}};
 
 std::string toString(TokenType type) {
   switch (type) {
@@ -50,8 +50,8 @@ std::string toString(TokenType type) {
     return "TT_EOL";
   case TokenType::TT_NXT:
     return "TT_NXT";
-	case TokenType::TT_EOP:
-		return "TT_EOP";
+  case TokenType::TT_EOP:
+    return "TT_EOP";
 
   // Keywords
   case TokenType::TT_DO:
@@ -74,20 +74,20 @@ std::string toString(TokenType type) {
     return "TT_ATTR";
   case TokenType::TT_STR:
     return "TT_STR";
-	case TokenType::TT_USR:
-		return "TT_USR";
-	case TokenType::TT_PAR:
-		return "TT_PAR";
-	case TokenType::TT_BL:
-		return "TT_BL";
-	case TokenType::TT_LST:
-		return "TT_LST";
+  case TokenType::TT_USR:
+    return "TT_USR";
+  case TokenType::TT_PAR:
+    return "TT_PAR";
+  case TokenType::TT_BL:
+    return "TT_BL";
+  case TokenType::TT_LST:
+    return "TT_LST";
+  case TokenType::TT_SRC:
+    return "TT_SRC";
   default:
     return "ILLEGAL";
   }
 }
-
-
 
 char symbol(TokenType type) {
   switch (type) {
@@ -132,10 +132,7 @@ char symbol(TokenType type) {
   }
 }
 
-
 // Overload ostream << for TokenType
 std::ostream &operator<<(std::ostream &os, TokenType type) {
   return os << toString(type);
 }
-
-

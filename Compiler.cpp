@@ -64,8 +64,32 @@ private:
         return;
       }
       switch (token->t_type) {
+      case TokenType::TT_STR:
       case TokenType::TT_ATTR:
         this->curr_prompt->context += token->t_val + " ";
+        break;
+      case TokenType::TT_USR:
+        std::cout << "Multi Steps are coming in next update \n";
+        break;
+      case TokenType::TT_EOL:
+        this->end_of_line = true;
+        break;
+      default:
+        this->illegal_input(token->location);
+        break;
+      }
+    }
+  }
+  void src_called(){
+    while (auto token = this->next_token()) {
+      if (this->end_of_line) {
+        --this->current_token;
+        return;
+      }
+      switch (token->t_type) {
+      case TokenType::TT_STR:
+      case TokenType::TT_ATTR:
+        this->curr_prompt->source += token->t_val + " ";
         break;
       case TokenType::TT_USR:
         std::cout << "Multi Steps are coming in next update \n";
@@ -169,6 +193,9 @@ public:
         break;
       case TokenType::TT_ON:
         this->on_called();
+        break;
+      case TokenType::TT_SRC:
+        this->src_called();
         break;
       case TokenType::TT_FMT:
         this->fmt_called();
