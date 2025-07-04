@@ -40,6 +40,8 @@ std::string toString(TokenType type) {
     return "TT_CL";
   case TokenType::TT_SC:
     return "TT_SC";
+  case TokenType::TT_CM:
+    return "TT_CM";
   case TokenType::TT_SB:
     return "TT_SB";
   case TokenType::TT_EB:
@@ -125,6 +127,8 @@ char symbol(TokenType type) {
     return '}';
   case TokenType::TT_EQ:
     return '=';
+  case TokenType::TT_CM:
+    return ',';
   case TokenType::TT_EOL:
     return '\n';
   default:

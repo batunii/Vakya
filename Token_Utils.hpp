@@ -25,6 +25,7 @@ enum class TokenType {
   TT_SB,
   TT_EB,
   TT_EQ,
+	TT_CM,
   TT_NXT,
   TT_EOL,
 	TT_EOP,

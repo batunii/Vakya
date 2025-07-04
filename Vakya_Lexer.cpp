@@ -129,6 +129,9 @@ std::vector<Tokens> &Lexer::make_tokens() {
       }
       break;
     }
+    case ',':
+      this->t_list.emplace_back(TokenType::TT_CM, this->next_pos - 1);
+      break;
     case '=':
       this->t_list.emplace_back(TokenType::TT_EQ, this->next_pos - 1);
       break;
@@ -137,7 +140,7 @@ std::vector<Tokens> &Lexer::make_tokens() {
       this->handle_quotes();
       break;
     case '\n':
-      this->t_list.emplace_back(TokenType::TT_EOL, this->next_pos-1);
+      this->t_list.emplace_back(TokenType::TT_EOL, this->next_pos - 1);
       break;
     default: {
       if (std::isalnum(this->curr_char))
