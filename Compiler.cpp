@@ -53,7 +53,7 @@ class AST {
     std::string action_name = "do";
     curr_program->do_token.action_name = "do";
     curr_program->do_token.action_props = action_token->t_val;
-    this->program_steps.emplace_back(*this->curr_program);
+    this->program_steps.emplace_back(this->curr_program);
     this->curr_program = this->program_steps.back();
   }
   void parse_on() {
@@ -67,7 +67,7 @@ class AST {
     std::string action_name = "on";
     curr_program->do_token.action_name = "on";
     curr_program->do_token.action_props = action_token->t_val;
-    this->program_steps.emplace_back(*this->curr_program);
+    this->program_steps.emplace_back(this->curr_program);
     this->curr_program = this->program_steps.back();
   }
 
@@ -78,9 +78,11 @@ public:
       switch (curr_token->t_type) {
       case TokenType::TT_DO: {
         parse_do();
+        break;
       }
       case TokenType::TT_ON: {
         parse_on();
+        break;
       }
       default: {
       }
