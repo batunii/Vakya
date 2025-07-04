@@ -4,11 +4,13 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
 class AST {
   int curr_token = -1;
   int next_token = 0;
   Lexer *lexer;
+	std::vector<Program> program_steps;
 public:
   std::optional<Tokens> advance_token() {
     if (curr_token < lexer->t_list.size()) {
