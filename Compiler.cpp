@@ -7,6 +7,15 @@
 #include <string>
 #include <vector>
 
+/*
+parse the tokens =>
+if you get Do =>
+call parse_do function
+parse do function will create a new Program object
+assign it to curr_program var
+and make the do_token inside the program var
+do same with on but don't create a new program var for it.
+*/
 class AST {
   size_t curr_token = 0;
   size_t next_token = 1;
@@ -94,6 +103,46 @@ public:
       }
       case TokenType::TT_SRC: {
         std::cout << "SRC token type at : " << curr_token->location << "\n";
+  void parse_do() {
+    auto action_token = this->advance_token();
+    if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
+                          action_token->t_type != TokenType::TT_STR)) {
+      std::cout << "Expected token after @do\n";
+      return;
+    }
+    this->curr_program = new Program();
+    std::string action_name = "do";
+    curr_program->do_token.action_name = "do";
+    curr_program->do_token.action_props = action_token->t_val;
+    this->program_steps.emplace_back(this->curr_program);
+    this->curr_program = this->program_steps.back();
+  }
+  void parse_on() {
+    auto action_token = this->advance_token();
+    if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
+                          action_token->t_type != TokenType::TT_STR)) {
+      std::cout << "Expected token after @on\n";
+      return;
+    }
+    this->curr_program = new Program();
+    std::string action_name = "on";
+    curr_program->do_token.action_name = "on";
+    curr_program->do_token.action_props = action_token->t_val;
+    this->program_steps.emplace_back(this->curr_program);
+    this->curr_program = this->program_steps.back();
+  }
+
+public:
+  void start_compiler(Lexer *lexer_input) {
+    this->lexer = lexer_input;
+    while (auto curr_token = this->advance_token()) {
+      switch (curr_token->t_type) {
+      case TokenType::TT_DO: {
+        parse_do();
+        break;
+      }
+      case TokenType::TT_ON: {
+        parse_on();
         break;
       }
       default: {
@@ -114,5 +163,7 @@ int main() {
   Lexer lexer(code);
   std::cout << lexer.make_tokens() << std::endl;
 
+  AST ast;
+  ast.start_compiler(&lexer);
   return 0;
 }
