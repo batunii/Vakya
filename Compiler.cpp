@@ -1,7 +1,24 @@
+#include "Program.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Prompt.cpp"
 #include <iostream>
+#include <optional>
 #include <string>
+
+class AST {
+  int curr_token = -1;
+  int next_token = 0;
+  Lexer *lexer;
+public:
+  std::optional<Tokens> advance_token() {
+    if (curr_token < lexer->t_list.size()) {
+      ++next_token;
+      return lexer->t_list[++curr_token];
+    } else
+      return std::nullopt;
+  }
+  Tokens peek_token() { return lexer->t_list[next_token]; }
+};
 
 int main() {
   std::string code, line;
