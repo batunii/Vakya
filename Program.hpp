@@ -32,6 +32,7 @@ public:
 };
 
 class Program {
+  public:
   ops<std::string> do_token;
   ops<std::string> on_token;
   ops<ls_props<std::string>> src_token;
