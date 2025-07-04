@@ -73,7 +73,6 @@ class AST {
     }
     return props;
   }
-  void parse_do() {}
   void parse_src() {
     std::optional<Tokens> next_token = this->advance_token();
     if (next_token && next_token->t_type == TokenType::TT_LP) {
@@ -88,21 +87,6 @@ class AST {
     }
   }
 
-public:
-  void start_compiler() {
-    while (std::optional<Tokens> curr_token = this->advance_token()) {
-      switch (curr_token->t_type) {
-      case TokenType::TT_DO: {
-        parse_do();
-        std::cout << "DO token type at : " << curr_token->location << "\n";
-        break;
-      }
-      case TokenType::TT_ON: {
-        std::cout << "ON token type at : " << curr_token->location << "\n";
-        break;
-      }
-      case TokenType::TT_SRC: {
-        std::cout << "SRC token type at : " << curr_token->location << "\n";
   void parse_do() {
     auto action_token = this->advance_token();
     if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
