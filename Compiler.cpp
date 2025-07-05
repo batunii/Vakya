@@ -55,8 +55,6 @@ class AST {
         break;
       }
       case TokenType::TT_CM: {
-        if (!props->action_props.should.has_value())
-          props->action_props.should.emplace();
         curr_list = &*props->action_props.should;
         break;
       }
