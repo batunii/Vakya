@@ -36,7 +36,8 @@ class AST {
   ops<ls_props<std::string>> *parse_parenthesis(std::string &&action_name) {
     ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
     props->action_name = action_name;
-    std::vector<std::string> *curr_list = nullptr;
+    props->action_props.should.emplace();
+    std::vector<std::string> *curr_list = &*props->action_props.should;
     std::optional<Tokens> next_token = this->advance_token();
     while (next_token && (next_token->t_type != TokenType::TT_RP)) {
       switch (next_token->t_type) {
