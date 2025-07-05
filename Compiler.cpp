@@ -7,15 +7,6 @@
 #include <string>
 #include <vector>
 
-/*
-parse the tokens =>
-if you get Do =>
-call parse_do function
-parse do function will create a new Program object
-assign it to curr_program var
-and make the do_token inside the program var
-do same with on but don't create a new program var for it.
-*/
 class AST {
   size_t curr_token = 0;
   size_t next_token = 1;
@@ -42,27 +33,35 @@ class AST {
     --this->next_token;
     return next_token;
   }
-  ops<ls_props<std::string>> *parse_parenthesis() {
+  ops<ls_props<std::string>> *parse_parenthesis(std::string &&action_name) {
     ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
-    std::vector<std::string> curr_list = props->action_props.should;
+    props->action_name = action_name;
+    std::vector<std::string> *curr_list = nullptr;
     std::optional<Tokens> next_token = this->advance_token();
     while (next_token && (next_token->t_type != TokenType::TT_RP)) {
       switch (next_token->t_type) {
       case TokenType::TT_EX: {
-        curr_list = props->action_props.must;
+        if (!props->action_props.must.has_value())
+          props->action_props.must.emplace();
+
+        curr_list = &*props->action_props.must;
         break;
       }
       case TokenType::TT_QM: {
-        curr_list = props->action_props.could;
+        if (!props->action_props.could.has_value())
+          props->action_props.could.emplace();
+        curr_list = &*props->action_props.could;
         break;
       }
       case TokenType::TT_CM: {
-        curr_list = props->action_props.should;
+        if (!props->action_props.should.has_value())
+          props->action_props.should.emplace();
+        curr_list = &*props->action_props.should;
         break;
       }
       case TokenType::TT_STR:
       case TokenType::TT_ATTR: {
-        curr_list.emplace_back(next_token->t_val);
+        curr_list->emplace_back(next_token->t_val);
         break;
       }
       default:
@@ -78,7 +77,7 @@ class AST {
     if (next_token && next_token->t_type == TokenType::TT_LP) {
       if (get_curr_program().has_value()) {
         this->curr_program = this->get_curr_program().value();
-        this->curr_program->src_token = this->parse_parenthesis();
+        this->curr_program->src_token = this->parse_parenthesis("src");
       } else {
         std::cout << "No current Program \n";
       }
@@ -95,9 +94,10 @@ class AST {
       return;
     }
     this->curr_program = new Program();
-    std::string action_name = "do";
-    curr_program->do_token.action_name = "do";
-    curr_program->do_token.action_props = action_token->t_val;
+    ops<std::string> *new_do_token = new ops<std::string>();
+    curr_program->do_token = new_do_token;
+    curr_program->do_token->action_name = "do";
+    curr_program->do_token->action_props = action_token->t_val;
     this->program_steps.emplace_back(this->curr_program);
     this->curr_program = this->program_steps.back();
   }
@@ -108,12 +108,16 @@ class AST {
       std::cout << "Expected token after @on\n";
       return;
     }
-    this->curr_program = new Program();
-    std::string action_name = "on";
-    curr_program->do_token.action_name = "on";
-    curr_program->do_token.action_props = action_token->t_val;
-    this->program_steps.emplace_back(this->curr_program);
-    this->curr_program = this->program_steps.back();
+    if (this->get_curr_program().has_value()) {
+      this->curr_program = this->get_curr_program().value();
+      ops<std::string> *new_on_token = new ops<std::string>();
+      this->curr_program->on_token = new_on_token;
+      this->curr_program->on_token->action_name = "on";
+      this->curr_program->on_token->action_props = action_token->t_val;
+    } else {
+      std::cout << "No current Program found";
+      return;
+    }
   }
 
 public:
@@ -129,11 +133,20 @@ public:
         parse_on();
         break;
       }
+      case TokenType::TT_SRC: {
+        parse_src();
+        break;
+      }
       default: {
         std::cout << "Wrong token type at : " << curr_token->location << "\n";
         break;
       }
       }
+    }
+  }
+  void print_programs() {
+    for (const auto &prgrm : this->program_steps) {
+      std::cout << *prgrm << "\n";
     }
   }
 };
@@ -149,5 +162,6 @@ int main() {
 
   AST ast;
   ast.start_compiler(&lexer);
+  ast.print_programs();
   return 0;
 }
