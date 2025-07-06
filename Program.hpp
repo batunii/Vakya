@@ -24,9 +24,9 @@ public:
 // condition: key-value condition expression
 class condition {
 public:
-  std::string key;
-  std::string oper;
-  std::string value;
+  std::string&& key;
+  std::string&& oper;
+  std::string&& value;
 };
 
 // fmt_class: formatting structure with type, order, and metadata

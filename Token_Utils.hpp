@@ -25,10 +25,10 @@ enum class TokenType {
   TT_SB,
   TT_EB,
   TT_EQ,
-	TT_CM,
+  TT_CM,
   TT_NXT,
   TT_EOL,
-	TT_EOP,
+  TT_EOP,
 
   // Keywords
   TT_DO,
@@ -50,7 +50,7 @@ enum class TokenType {
 
 // Keyword token map (reserved words)
 extern const std::unordered_map<std::string, TokenType> keywords;
-
+extern const std::unordered_map<TokenType, std::string> operators;
 // Convert TokenType to string name (e.g., TT_AT -> "TT_AT")
 std::string toString(TokenType type);
 

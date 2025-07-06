@@ -9,6 +9,11 @@ const std::unordered_map<std::string, TokenType> keywords = {
     {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP},
     {"src", TokenType::TT_SRC}};
 
+const std::unordered_map<TokenType, std::string> operators = {
+    {TokenType::TT_EQ, "equals to"},
+    {TokenType::TT_LT, "less than"},
+    {TokenType::TT_GT, "greater than"}};
+
 std::string toString(TokenType type) {
   switch (type) {
   // Symbols

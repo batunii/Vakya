@@ -2,6 +2,7 @@
 #include "Token_Utils.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Prompt.cpp"
+#include <cstddef>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -63,6 +64,22 @@ class AST {
         curr_list->emplace_back(next_token->t_val);
         break;
       }
+      case TokenType::TT_CL: {
+        if (props->action_name != "srp" && props->action_name != "asc" &&
+            props->action_name != "grp" && props->action_name != "dsc") {
+          std::optional<Tokens> new_token = this->advance_token();
+          if (new_token.has_value() &&
+              (new_token->t_type == TokenType::TT_ATTR ||
+               new_token->t_type == TokenType::TT_STR))
+            curr_list->back().append(" as " + new_token->t_val);
+
+        } else {
+          std::cout
+              << "key value aliasing is not allows with the given token type :"
+              << props->action_name << "\n";
+        }
+      	break;
+				}
       default:
         std::cout << "Wrong token at: " << next_token->location << "\n";
         break;
@@ -71,6 +88,14 @@ class AST {
     }
     return props;
   }
+
+  ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
+    ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
+    std::optional<Tokens> new_token = this->advance_token();
+    while (new_token && new_token->t_type != TokenType::TT_RB) {
+    }
+  }
+
   void parse_src() {
     std::optional<Tokens> next_token = this->advance_token();
     if (next_token && next_token->t_type == TokenType::TT_LP) {
