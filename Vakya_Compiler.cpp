@@ -4,7 +4,6 @@
 #include "Vakya_Prompt.cpp"
 #include <cstddef>
 #include <iostream>
-#include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
@@ -88,45 +87,94 @@ class AST {
     }
     return props;
   }
-  bool parse_condition(condition &curr_condition, Tokens &curr_token,
-                       std::string &action_name) {
-    if (curr_condition.key.empty()) {
-      curr_condition.key = curr_token.t_val;
-    } else if (curr_condition.key.empty() &&
-               curr_token.t_type == TokenType::TT_CL) {
-      if (action_name != "props" || action_name != "meta") {
-        std::cout << "Key value pairing operators are only allowed in meta "
-                     "data or props tag\n";
-        return false;
-      }
-      std::string &key_val = curr_condition.key;
-      auto it_operator = isto_operators.find(curr_condition.key);
-      curr_condition.oper =
-          (it_operator != isto_operators.end()) ? it_operator->second : " is ";
-      return true;
-    } else if (operators_map.find(curr_token.t_type) != operators_map.end()) {
-      curr_condition.oper.append(operators_map.at(curr_token.t_type));
-      return true;
-    } else if (!curr_condition.key.empty() && !curr_condition.oper.empty()) {
-      curr_condition.value.append(curr_token.t_val);
-      return true;
-    } else {
-      std::cout
-          << "You have entered wrong syntax for key value pair conditions at : "
-          << curr_token.location << "\n";
-      return false;
+  void parse_condition(condition *curr_condition, const Tokens &curr_token,
+                       std::string &token_type) {
+    if (curr_condition->key.empty() && token_type == "value_key") {
+      curr_condition->key = curr_token.t_val;
+    } else if (curr_condition->oper.empty() && token_type == "isto") {
+      auto it_value = isto_operators.find(curr_condition->key);
+      curr_condition->oper =
+          it_value != isto_operators.end() ? it_value->second : " is ";
+    } else if (token_type == "oper") {
+      auto it_value = operators_map.find(curr_token.t_type);
+      curr_condition->oper.append(it_value != operators_map.end()
+                                      ? it_value->second
+                                      : curr_token.t_val);
+    } else if (curr_condition->value.empty() && token_type == "value_key")
+      curr_condition->value = curr_token.t_val;
+    else {
+      std::cout << "Wrong conndition syntax at : " << curr_token.location
+                << "\n";
     }
-    std::cout << "Function shouldn't have taken this path : Check logic \n";
-    return false;
   }
 
-  ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
+  ops<ls_props<condition>> *parse_braces() {
+    this->advance_token();
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
+    std::optional<std::vector<condition>> *curr_list =
+        &cdn_props->action_props.should;
     std::optional<Tokens> new_token = this->advance_token();
+    condition *curr_condition = new condition();
+    auto validate_token = [&curr_condition]() -> bool {
+      return !(curr_condition->key.empty() || curr_condition->oper.empty() ||
+               curr_condition->value.empty());
+    };
+    auto get_condition = [&curr_condition, &new_token,
+                          this](std::string &&token_type_var) -> void {
+      parse_condition(curr_condition, new_token.value(), token_type_var);
+    };
     while (new_token && new_token->t_type != TokenType::TT_EB) {
-    }
-  }
+      switch (new_token->t_type) {
+      case TokenType::TT_EX: {
+        curr_list = &cdn_props->action_props.must;
+        break;
+      }
+      case TokenType::TT_QM: {
+        curr_list = &cdn_props->action_props.could;
+        break;
+      }
+      case TokenType::TT_CM: {
+        if (validate_token()) {
+          if (!curr_list->has_value()) {
+            curr_list->emplace();
+          }
+          curr_list->value().push_back(*curr_condition);
+          curr_condition = new condition();
+        } else {
+          std::cout << "Wrong conditon syntax at" << new_token->location
+                    << "\n";
+        }
+        curr_list = &cdn_props->action_props.should;
+        break;
+      }
+      case TokenType::TT_STR:
+      case TokenType::TT_ATTR:
+      case TokenType::TT_USR: {
+        get_condition("value_key");
+        break;
+      }
+      case TokenType::TT_EQ:
+      case TokenType::TT_GT:
+      case TokenType::TT_LT: {
+        get_condition("oper");
+        break;
+      }
+      case TokenType::TT_CL: {
+        get_condition("isto");
+        break;
+      }
 
+      default:
+        std::cout << "Wrong token type at : " << new_token->location << "\n";
+      }
+      new_token = this->advance_token();
+    }
+    if (!curr_list->has_value())
+      curr_list->emplace();
+    curr_list->value().push_back(*curr_condition);
+
+    return cdn_props;
+  }
   void parse_src() {
     std::optional<Tokens> next_token = this->advance_token();
     if (next_token && next_token->t_type == TokenType::TT_LP) {
@@ -157,10 +205,12 @@ class AST {
         break;
       }
       case TokenType::TT_PRP: {
+        curr_fmt->order = parse_braces();
         break;
       }
       default:
-        std::cout << "This tokn is not acceptable in fmt\n";
+        std::cout << "This token is not acceptable in fmt "
+                  << next_token->location << "\n";
       }
       next_token = this->advance_token();
     }

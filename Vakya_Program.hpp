@@ -24,16 +24,16 @@ public:
 // condition: key-value condition expression
 class condition {
 public:
-  std::string key;
-  std::string oper;
-  std::string value;
+  std::string key = "";
+  std::string oper = "";
+  std::string value = "";
 };
 
 // fmt_class: formatting structure with type, order, and metadata
 class fmt_class {
 public:
   ops<ls_props<std::string>> *type;
-  std::vector<ops<ls_props<std::string>>> *order;
+  ops<ls_props<condition>> *order;
   ops<ls_props<condition>> *meta;
 };
 
@@ -96,14 +96,12 @@ inline std::ostream &operator<<(std::ostream &os, const fmt_class &fmt) {
     os << *fmt.type << "\n";
 
   if (fmt.order) {
-  os << "[Format Order]\n";
-    for (auto &o : *(fmt.order)) {
-      os << o << "\n";
-    }
+    os << "[Format Order]\n";
+    os << *fmt.order << "\n";
   }
 
-  if (fmt.meta)
   os << "[Format Metadata]\n";
+  if (fmt.meta)
     os << *fmt.meta << "\n";
 
   return os;

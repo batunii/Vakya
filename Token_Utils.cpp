@@ -14,10 +14,10 @@ const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_LT, "less than"},
     {TokenType::TT_GT, "greater than"}};
 const std::unordered_map<std::string, std::string> isto_operators = {
-    {"meta", " is "},
-    {"asc", " on "},
-    {"dsc", " on "},
-    {"grp", " by "}};
+    {"meta", "is"},
+    {"asc", "on"},
+    {"dsc", "on"},
+    {"grp", "by"}};
 
 std::string toString(TokenType type) {
   switch (type) {
