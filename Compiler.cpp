@@ -15,6 +15,7 @@ parse do function will create a new Program object
 assign it to curr_program var
 and make the do_token inside the program var
 do same with on but don't create a new program var for it.
+
 */
 class AST {
   size_t curr_token = 0;
