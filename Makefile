@@ -1,4 +1,4 @@
-SRC = Token_Utils.cpp Vakya_Lexer.cpp Vakya_Prompt.cpp Compiler.cpp
+SRC = Token_Utils.cpp Vakya_Lexer.cpp Vakya_Prompt.cpp Vakya_Compiler.cpp
 CXX = g++
 FLAGS = -Wall -Wextra -std=c++17
 DBG_FLG = -g -Wall -Wextra -std=c++17

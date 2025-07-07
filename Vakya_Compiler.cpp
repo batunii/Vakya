@@ -1,9 +1,10 @@
-#include "Program.hpp"
 #include "Token_Utils.hpp"
 #include "Vakya_Lexer.hpp"
+#include "Vakya_Program.hpp"
 #include "Vakya_Prompt.cpp"
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
@@ -14,7 +15,6 @@ class AST {
   Lexer *lexer;
   std::vector<Program *> program_steps;
   Program *curr_program;
-
   std::optional<Program *> get_curr_program() {
     if (size_t program_size = this->program_steps.size())
       return this->program_steps[program_size - 1];
@@ -37,49 +37,49 @@ class AST {
   ops<ls_props<std::string>> *parse_parenthesis(std::string &&action_name) {
     ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
     props->action_name = action_name;
-    props->action_props.should.emplace();
-    std::vector<std::string> *curr_list = &*props->action_props.should;
+    std::optional<std::vector<std::string>> *curr_list =
+        &props->action_props.should;
+    auto ensure_list_ready = [&curr_list]() -> std::vector<std::string> & {
+      if (!curr_list->has_value())
+        curr_list->emplace();
+      return curr_list->value();
+    };
     std::optional<Tokens> next_token = this->advance_token();
     while (next_token && (next_token->t_type != TokenType::TT_RP)) {
       switch (next_token->t_type) {
       case TokenType::TT_EX: {
-        if (!props->action_props.must.has_value())
-          props->action_props.must.emplace();
-
-        curr_list = &*props->action_props.must;
+        curr_list = &props->action_props.must;
         break;
       }
       case TokenType::TT_QM: {
-        if (!props->action_props.could.has_value())
-          props->action_props.could.emplace();
-        curr_list = &*props->action_props.could;
+        curr_list = &props->action_props.could;
         break;
       }
       case TokenType::TT_CM: {
-        curr_list = &*props->action_props.should;
+        curr_list = &props->action_props.should;
         break;
       }
       case TokenType::TT_STR:
       case TokenType::TT_ATTR: {
-        curr_list->emplace_back(next_token->t_val);
+        ensure_list_ready().emplace_back(next_token->t_val);
         break;
       }
       case TokenType::TT_CL: {
-        if (props->action_name != "srp" && props->action_name != "asc" &&
-            props->action_name != "grp" && props->action_name != "dsc") {
-          std::optional<Tokens> new_token = this->advance_token();
-          if (new_token.has_value() &&
-              (new_token->t_type == TokenType::TT_ATTR ||
-               new_token->t_type == TokenType::TT_STR))
-            curr_list->back().append(" as " + new_token->t_val);
-
+        std::optional<Tokens> new_token = this->advance_token();
+        if (action_name != "src" && new_token.has_value() &&
+            (new_token->t_type == TokenType::TT_ATTR ||
+             new_token->t_type == TokenType::TT_STR)) {
+          ensure_list_ready().back().append(" as " + new_token->t_val);
         } else {
           std::cout
-              << "key value aliasing is not allows with the given token type :"
-              << props->action_name << "\n";
+              << "Wrong type of token at "
+              << next_token.value_or(Tokens(TokenType::TT_ILL, 0)).location
+              << "\n";
+          break;
         }
-      	break;
-				}
+
+        break;
+      }
       default:
         std::cout << "Wrong token at: " << next_token->location << "\n";
         break;
@@ -88,11 +88,42 @@ class AST {
     }
     return props;
   }
+  bool parse_condition(condition &curr_condition, Tokens &curr_token,
+                       std::string &action_name) {
+    if (curr_condition.key.empty()) {
+      curr_condition.key = curr_token.t_val;
+    } else if (curr_condition.key.empty() &&
+               curr_token.t_type == TokenType::TT_CL) {
+      if (action_name != "props" || action_name != "meta") {
+        std::cout << "Key value pairing operators are only allowed in meta "
+                     "data or props tag\n";
+        return false;
+      }
+      std::string &key_val = curr_condition.key;
+      auto it_operator = isto_operators.find(curr_condition.key);
+      curr_condition.oper =
+          (it_operator != isto_operators.end()) ? it_operator->second : " is ";
+      return true;
+    } else if (operators_map.find(curr_token.t_type) != operators_map.end()) {
+      curr_condition.oper.append(operators_map.at(curr_token.t_type));
+      return true;
+    } else if (!curr_condition.key.empty() && !curr_condition.oper.empty()) {
+      curr_condition.value.append(curr_token.t_val);
+      return true;
+    } else {
+      std::cout
+          << "You have entered wrong syntax for key value pair conditions at : "
+          << curr_token.location << "\n";
+      return false;
+    }
+    std::cout << "Function shouldn't have taken this path : Check logic \n";
+    return false;
+  }
 
   ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
     std::optional<Tokens> new_token = this->advance_token();
-    while (new_token && new_token->t_type != TokenType::TT_RB) {
+    while (new_token && new_token->t_type != TokenType::TT_EB) {
     }
   }
 
@@ -109,7 +140,31 @@ class AST {
       std::cout << "Wrong token at " << next_token->location << "\n";
     }
   }
-
+  void parse_fmt() {
+    if (this->get_curr_program().has_value())
+      this->curr_program = this->get_curr_program().value();
+    else {
+      std::cout << "No current Program found\n";
+      exit(-1);
+    }
+    fmt_class *curr_fmt = new fmt_class();
+    this->curr_program->fmt_token = curr_fmt;
+    auto next_token = this->advance_token();
+    while (next_token && next_token->t_type != TokenType::TT_EOL) {
+      switch (next_token->t_type) {
+      case TokenType::TT_TBL: {
+        curr_fmt->type = parse_parenthesis("table");
+        break;
+      }
+      case TokenType::TT_PRP: {
+        break;
+      }
+      default:
+        std::cout << "This tokn is not acceptable in fmt\n";
+      }
+      next_token = this->advance_token();
+    }
+  }
   void parse_do() {
     auto action_token = this->advance_token();
     if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
@@ -159,6 +214,10 @@ public:
       }
       case TokenType::TT_SRC: {
         parse_src();
+        break;
+      }
+      case TokenType::TT_FMT: {
+        parse_fmt();
         break;
       }
       default: {

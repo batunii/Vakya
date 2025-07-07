@@ -24,9 +24,9 @@ public:
 // condition: key-value condition expression
 class condition {
 public:
-  std::string&& key;
-  std::string&& oper;
-  std::string&& value;
+  std::string key;
+  std::string oper;
+  std::string value;
 };
 
 // fmt_class: formatting structure with type, order, and metadata
@@ -95,15 +95,15 @@ inline std::ostream &operator<<(std::ostream &os, const fmt_class &fmt) {
   if (fmt.type)
     os << *fmt.type << "\n";
 
-  os << "[Format Order]\n";
   if (fmt.order) {
+  os << "[Format Order]\n";
     for (auto &o : *(fmt.order)) {
       os << o << "\n";
     }
   }
 
-  os << "[Format Metadata]\n";
   if (fmt.meta)
+  os << "[Format Metadata]\n";
     os << *fmt.meta << "\n";
 
   return os;
