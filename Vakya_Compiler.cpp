@@ -34,7 +34,8 @@ class AST {
     --this->next_token;
     return next_token;
   }
-  ops<ls_props<std::string>> *parse_parenthesis(std::string &&action_name) {
+  ops<ls_props<std::string>> *
+  parse_parenthesis(const std::string &action_name) {
     if (auto next_token = this->advance_token();
         !(next_token.has_value() && next_token->t_type == TokenType::TT_LP))
       throw vakya_error("Wrong parenthesis syntax", next_token->location);
@@ -111,7 +112,10 @@ class AST {
   }
 
   ops<ls_props<condition>> *parse_braces() {
-    this->advance_token();
+    if (auto new_token = this->advance_token();
+        !(new_token && new_token->t_type == TokenType::TT_SB))
+      throw vakya_error("Wrong syntax for Condition / key Valu pair",
+                        new_token->location);
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
     std::optional<std::vector<condition>> *curr_list =
         &cdn_props->action_props.should;
@@ -178,16 +182,11 @@ class AST {
     return cdn_props;
   }
   void parse_src() {
-    std::optional<Tokens> next_token = this->advance_token();
-    if (next_token && next_token->t_type == TokenType::TT_LP) {
-      if (get_curr_program().has_value()) {
-        this->curr_program = this->get_curr_program().value();
-        this->curr_program->src_token = this->parse_parenthesis("src");
-      } else {
-        throw vakya_error("No current Program", 0);
-      }
+    if (get_curr_program().has_value()) {
+      this->curr_program = this->get_curr_program().value();
+      this->curr_program->src_token = this->parse_parenthesis("src");
     } else {
-      throw vakya_error("Error in parsing src in LP", next_token->location);
+      throw vakya_error("No current Program", 0);
     }
   }
   void parse_fmt() {
@@ -201,14 +200,15 @@ class AST {
     auto next_token = this->advance_token();
     while (next_token && next_token->t_type != TokenType::TT_EOL) {
       switch (next_token->t_type) {
-      case TokenType::TT_TBL: {
-        curr_fmt->type = parse_parenthesis("table");
+      case TokenType::TT_USR: {
+        curr_fmt->type = parse_parenthesis(next_token->t_val);
         break;
       }
       case TokenType::TT_PRP: {
         curr_fmt->order = parse_braces();
         break;
       }
+				
       default:
         throw vakya_error("Wrong token at fmt", next_token->location);
       }
