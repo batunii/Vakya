@@ -1,4 +1,5 @@
 #include "Token_Utils.hpp"
+#include "Vakya_Error.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
 #include "Vakya_Prompt.cpp"
@@ -33,7 +34,11 @@ class AST {
     --this->next_token;
     return next_token;
   }
-  ops<ls_props<std::string>> *parse_parenthesis(std::string &&action_name) {
+  ops<ls_props<std::string>> *
+  parse_parenthesis(const std::string &action_name) {
+    if (auto next_token = this->advance_token();
+        !(next_token.has_value() && next_token->t_type == TokenType::TT_LP))
+      throw vakya_error("Wrong parenthesis syntax", next_token->location);
     ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
     props->action_name = action_name;
     std::optional<std::vector<std::string>> *curr_list =
@@ -70,17 +75,16 @@ class AST {
              new_token->t_type == TokenType::TT_STR)) {
           ensure_list_ready().back().append(" as " + new_token->t_val);
         } else {
-          std::cout
-              << "Wrong type of token at "
-              << next_token.value_or(Tokens(TokenType::TT_ILL, 0)).location
-              << "\n";
-          break;
+          throw vakya_error("Error in parsing parenthesis, with colon",
+                            new_token->location);
         }
 
         break;
       }
       default:
-        std::cout << "Wrong token at: " << next_token->location << "\n";
+        throw vakya_error("Error in parsing parenthesis with action word " +
+                              action_name,
+                          next_token->location);
         break;
       }
       next_token = this->advance_token();
@@ -103,13 +107,15 @@ class AST {
     } else if (curr_condition->value.empty() && token_type == "value_key")
       curr_condition->value = curr_token.t_val;
     else {
-      std::cout << "Wrong conndition syntax at : " << curr_token.location
-                << "\n";
+      throw vakya_error("Error in parsing condition", curr_token.location);
     }
   }
 
   ops<ls_props<condition>> *parse_braces() {
-    this->advance_token();
+    if (auto new_token = this->advance_token();
+        !(new_token && new_token->t_type == TokenType::TT_SB))
+      throw vakya_error("Wrong syntax for Condition / key Valu pair",
+                        new_token->location);
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
     std::optional<std::vector<condition>> *curr_list =
         &cdn_props->action_props.should;
@@ -141,8 +147,8 @@ class AST {
           curr_list->value().push_back(*curr_condition);
           curr_condition = new condition();
         } else {
-          std::cout << "Wrong conditon syntax at" << new_token->location
-                    << "\n";
+          throw vakya_error("Error in parsing braces in commas ",
+                            new_token->location);
         }
         curr_list = &cdn_props->action_props.should;
         break;
@@ -165,7 +171,7 @@ class AST {
       }
 
       default:
-        std::cout << "Wrong token type at : " << new_token->location << "\n";
+        throw vakya_error("Error in parsing braces", new_token->location);
       }
       new_token = this->advance_token();
     }
@@ -176,41 +182,35 @@ class AST {
     return cdn_props;
   }
   void parse_src() {
-    std::optional<Tokens> next_token = this->advance_token();
-    if (next_token && next_token->t_type == TokenType::TT_LP) {
-      if (get_curr_program().has_value()) {
-        this->curr_program = this->get_curr_program().value();
-        this->curr_program->src_token = this->parse_parenthesis("src");
-      } else {
-        std::cout << "No current Program \n";
-      }
+    if (get_curr_program().has_value()) {
+      this->curr_program = this->get_curr_program().value();
+      this->curr_program->src_token = this->parse_parenthesis("src");
     } else {
-      std::cout << "Wrong token at " << next_token->location << "\n";
+      throw vakya_error("No current Program", 0);
     }
   }
   void parse_fmt() {
     if (this->get_curr_program().has_value())
       this->curr_program = this->get_curr_program().value();
     else {
-      std::cout << "No current Program found\n";
-      exit(-1);
+      throw vakya_error("No current program found for fmt", 0);
     }
     fmt_class *curr_fmt = new fmt_class();
     this->curr_program->fmt_token = curr_fmt;
     auto next_token = this->advance_token();
     while (next_token && next_token->t_type != TokenType::TT_EOL) {
       switch (next_token->t_type) {
-      case TokenType::TT_TBL: {
-        curr_fmt->type = parse_parenthesis("table");
+      case TokenType::TT_USR: {
+        curr_fmt->type = parse_parenthesis(next_token->t_val);
         break;
       }
       case TokenType::TT_PRP: {
         curr_fmt->order = parse_braces();
         break;
       }
+				
       default:
-        std::cout << "This token is not acceptable in fmt "
-                  << next_token->location << "\n";
+        throw vakya_error("Wrong token at fmt", next_token->location);
       }
       next_token = this->advance_token();
     }
@@ -219,7 +219,7 @@ class AST {
     auto action_token = this->advance_token();
     if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
                           action_token->t_type != TokenType::TT_STR)) {
-      std::cout << "Expected token after @do\n";
+      throw vakya_error("Token expect after do", action_token->location);
       return;
     }
     this->curr_program = new Program();
@@ -234,7 +234,7 @@ class AST {
     auto action_token = this->advance_token();
     if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
                           action_token->t_type != TokenType::TT_STR)) {
-      std::cout << "Expected token after @on\n";
+      throw vakya_error("Expected token after on at", action_token->location);
       return;
     }
     if (this->get_curr_program().has_value()) {
@@ -244,7 +244,7 @@ class AST {
       this->curr_program->on_token->action_name = "on";
       this->curr_program->on_token->action_props = action_token->t_val;
     } else {
-      std::cout << "No current Program found";
+      throw vakya_error("No active program for on", 0);
       return;
     }
   }
@@ -270,8 +270,12 @@ public:
         parse_fmt();
         break;
       }
+      case TokenType::TT_EOL: {
+        break;
+      }
       default: {
-        std::cout << "Wrong token type at : " << curr_token->location << "\n";
+        throw vakya_error("Unexpected token at root level",
+                          curr_token->location);
         break;
       }
       }
@@ -294,7 +298,11 @@ int main() {
   std::cout << lexer.make_tokens() << std::endl;
 
   AST ast;
-  ast.start_compiler(&lexer);
-  ast.print_programs();
+  try {
+    ast.start_compiler(&lexer);
+    ast.print_programs();
+  } catch (vakya_error &ve) {
+    std::cout << ve.what() << "\n";
+  }
   return 0;
 }
