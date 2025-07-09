@@ -7,12 +7,14 @@ const std::unordered_map<std::string, TokenType> keywords = {
     {"fmt", TokenType::TT_FMT},   {"cdn", TokenType::TT_CDN},
     {"table", TokenType::TT_TBL}, {"asc", TokenType::TT_ASC},
     {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP},
-    {"src", TokenType::TT_SRC},   {"prop", TokenType::TT_PRP}};
+    {"src", TokenType::TT_SRC},   {"prop", TokenType::TT_PRP},
+		{"meta", TokenType::TT_META}
+};
 
 const std::unordered_map<TokenType, std::string> operators_map = {
-    {TokenType::TT_EQ, "equals to"},
-    {TokenType::TT_LT, "less than"},
-    {TokenType::TT_GT, "greater than"}};
+    {TokenType::TT_EQ, " equals to "},
+    {TokenType::TT_LT, " less than "},
+    {TokenType::TT_GT, " greater than "}};
 const std::unordered_map<std::string, std::string> isto_operators = {
     {"meta", "is"},
     {"asc", "on"},
@@ -98,6 +100,8 @@ std::string toString(TokenType type) {
     return "TT_SRC";
   case TokenType::TT_PRP:
     return "TT_PRP";
+	case TokenType::TT_META:
+		return "TT_META";
   default:
     return "ILLEGAL";
   }

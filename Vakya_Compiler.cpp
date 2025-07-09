@@ -70,7 +70,7 @@ class AST {
       }
       case TokenType::TT_CL: {
         std::optional<Tokens> new_token = this->advance_token();
-        if (action_name != "src" && new_token.has_value() &&
+        if (action_name != "source" && new_token.has_value() &&
             (new_token->t_type == TokenType::TT_ATTR ||
              new_token->t_type == TokenType::TT_STR)) {
           ensure_list_ready().back().append(" as " + new_token->t_val);
@@ -111,12 +111,13 @@ class AST {
     }
   }
 
-  ops<ls_props<condition>> *parse_braces() {
+  ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
     if (auto new_token = this->advance_token();
         !(new_token && new_token->t_type == TokenType::TT_SB))
-      throw vakya_error("Wrong syntax for Condition / key Valu pair",
+      throw vakya_error("Wrong syntax for Condition / key Value pair",
                         new_token->location);
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
+    cdn_props->action_name = action_name;
     std::optional<std::vector<condition>> *curr_list =
         &cdn_props->action_props.should;
     std::optional<Tokens> new_token = this->advance_token();
@@ -137,6 +138,9 @@ class AST {
       }
       case TokenType::TT_QM: {
         curr_list = &cdn_props->action_props.could;
+        break;
+      }
+      case TokenType::TT_EOL: {
         break;
       }
       case TokenType::TT_CM: {
@@ -169,7 +173,6 @@ class AST {
         get_condition("isto");
         break;
       }
-
       default:
         throw vakya_error("Error in parsing braces", new_token->location);
       }
@@ -184,7 +187,7 @@ class AST {
   void parse_src() {
     if (get_curr_program().has_value()) {
       this->curr_program = this->get_curr_program().value();
-      this->curr_program->src_token = this->parse_parenthesis("src");
+      this->curr_program->src_token = this->parse_parenthesis("source");
     } else {
       throw vakya_error("No current Program", 0);
     }
@@ -205,15 +208,24 @@ class AST {
         break;
       }
       case TokenType::TT_PRP: {
-        curr_fmt->order = parse_braces();
+        curr_fmt->order = parse_braces("Order Properties");
         break;
       }
-				
+      case TokenType::TT_META: {
+        curr_fmt->meta = parse_braces("Meta");
+        break;
+      }
       default:
         throw vakya_error("Wrong token at fmt", next_token->location);
       }
       next_token = this->advance_token();
     }
+  }
+  void parse_cdn() {
+    if (this->get_curr_program().has_value()) {
+      this->curr_program = this->get_curr_program().value();
+    }
+    this->curr_program->cdn_token = this->parse_braces("Conditions");
   }
   void parse_do() {
     auto action_token = this->advance_token();
@@ -268,6 +280,10 @@ public:
       }
       case TokenType::TT_FMT: {
         parse_fmt();
+        break;
+      }
+      case TokenType::TT_CDN: {
+        parse_cdn();
         break;
       }
       case TokenType::TT_EOL: {
