@@ -100,8 +100,8 @@ class AST {
     return props;
   }
 
-  void parse_condition_new(condition *curr_condition, const Tokens &curr_token,
-                           std::string &token_type) {
+  void parse_condition(condition *curr_condition, const Tokens &curr_token,
+                       std::string &token_type) {
     if (curr_condition->oper.empty() && token_type == "value_key") {
       curr_condition->key.append(" " + curr_token.t_val);
     } else if (curr_condition->oper.empty() && token_type == "isto") {
@@ -120,26 +120,6 @@ class AST {
     }
   }
 
-  void parse_condition(condition *curr_condition, const Tokens &curr_token,
-                       std::string &token_type) {
-    if (curr_condition->key.empty() && token_type == "value_key") {
-      curr_condition->key = curr_token.t_val;
-    } else if (curr_condition->oper.empty() && token_type == "isto") {
-      auto it_value = isto_operators.find(curr_condition->key);
-      curr_condition->oper =
-          it_value != isto_operators.end() ? it_value->second : " is ";
-    } else if (token_type == "oper") {
-      auto it_value = operators_map.find(curr_token.t_type);
-      curr_condition->oper.append(it_value != operators_map.end()
-                                      ? it_value->second
-                                      : curr_token.t_val);
-    } else if (curr_condition->value.empty() && token_type == "value_key")
-      curr_condition->value = curr_token.t_val;
-    else {
-      throw vakya_error("Error in parsing condition", curr_token.location);
-    }
-  }
-
   ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
     if (auto new_token = this->advance_token();
         !(new_token && new_token->t_type == TokenType::TT_SB))
@@ -152,17 +132,21 @@ class AST {
     std::optional<Tokens> new_token = this->advance_token();
     condition *curr_condition = new condition();
     auto validate_token = [&curr_condition]() -> bool {
-      return !(curr_condition->key.empty() || curr_condition->oper.empty() ||
-               curr_condition->value.empty());
+      return !(curr_condition->key.empty());
     };
     auto get_condition = [&curr_condition, &new_token,
                           this](std::string &&token_type_var) -> void {
-      parse_condition_new(curr_condition, new_token.value(), token_type_var);
+      parse_condition(curr_condition, new_token.value(), token_type_var);
     };
     while (new_token && new_token->t_type != TokenType::TT_EB) {
       switch (new_token->t_type) {
       case TokenType::TT_EX: {
-        curr_list = &cdn_props->action_props.must;
+        if (auto peeked_token = this->peek_token();
+            peek_token().has_value() &&
+            user_values.find(peeked_token->t_type) != user_values.end())
+          curr_list = &cdn_props->action_props.must;
+        else
+          get_condition("oper");
         break;
       }
       case TokenType::TT_QM: {
@@ -259,41 +243,51 @@ class AST {
   void parse_cdn() {
     if (this->get_curr_program().has_value()) {
       this->curr_program = this->get_curr_program().value();
+    } else {
+      throw vakya_error("No Program found, start program with do", 0);
     }
     this->curr_program->cdn_token = this->parse_braces("Conditions");
   }
 
   void parse_do() {
-    auto action_token = this->advance_token();
-    if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
-                          action_token->t_type != TokenType::TT_STR)) {
-      throw vakya_error("Token expect after do", action_token->location);
-      return;
-    }
     this->curr_program = new Program();
     ops<std::string> *new_do_token = new ops<std::string>();
     curr_program->do_token = new_do_token;
     curr_program->do_token->action_name = "do";
-    curr_program->do_token->action_props = action_token->t_val;
+    auto new_token = this->advance_token();
+    while (new_token && new_token->t_type != TokenType::TT_EOL) {
+      switch (new_token->t_type) {
+      case TokenType::TT_STR:
+      case TokenType::TT_ATTR:
+        curr_program->do_token->action_props.append(" " + new_token->t_val);
+        break;
+      default:
+        throw vakya_error("Token expect after do", new_token->location);
+      }
+      new_token = this->advance_token();
+    }
+
     this->program_steps.emplace_back(this->curr_program);
     this->curr_program = this->program_steps.back();
   }
+
   void parse_on() {
-    auto action_token = this->advance_token();
-    if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
-                          action_token->t_type != TokenType::TT_STR)) {
-      throw vakya_error("Expected token after on at", action_token->location);
-      return;
-    }
-    if (this->get_curr_program().has_value()) {
-      this->curr_program = this->get_curr_program().value();
-      ops<std::string> *new_on_token = new ops<std::string>();
-      this->curr_program->on_token = new_on_token;
-      this->curr_program->on_token->action_name = "on";
-      this->curr_program->on_token->action_props = action_token->t_val;
-    } else {
-      throw vakya_error("No active program for on", 0);
-      return;
+
+    ops<std::string> *new_on_token = new ops<std::string>();
+    curr_program->on_token = new_on_token;
+    curr_program->on_token->action_name = "on";
+    auto new_token = this->advance_token();
+    while (new_token && new_token->t_type != TokenType::TT_EOL) {
+      switch (new_token->t_type) {
+      case TokenType::TT_STR:
+      case TokenType::TT_ATTR:
+        curr_program->on_token->action_props.append(" " + new_token->t_val);
+        break;
+      default:
+        throw vakya_error("Token expect after on", new_token->location);
+      }
+
+      new_token = this->advance_token();
     }
   }
 

@@ -1,6 +1,7 @@
 #include "Token_Utils.hpp"
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
     {"do", TokenType::TT_DO},     {"on", TokenType::TT_ON},
@@ -8,18 +9,17 @@ const std::unordered_map<std::string, TokenType> keywords = {
     {"table", TokenType::TT_TBL}, {"asc", TokenType::TT_ASC},
     {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP},
     {"src", TokenType::TT_SRC},   {"prop", TokenType::TT_PRP},
-		{"meta", TokenType::TT_META}, {"strict", TokenType::TT_STRICT}
-};
+    {"meta", TokenType::TT_META}, {"strict", TokenType::TT_STRICT}};
 
 const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_EQ, " equals to "},
     {TokenType::TT_LT, " less than "},
-    {TokenType::TT_GT, " greater than "}};
+    {TokenType::TT_GT, " greater than "},
+    {TokenType::TT_EX, " not "}};
 const std::unordered_map<std::string, std::string> isto_operators = {
-    {"meta", "is"},
-    {"asc", "on"},
-    {"dsc", "on"},
-    {"grp", "by"}};
+    {"meta", "is"}, {"asc", "on"}, {"dsc", "on"}, {"grp", "by"}};
+
+const std::unordered_set<TokenType> user_values = {TokenType::TT_ATTR, TokenType::TT_USR, TokenType::TT_STR};
 
 std::string toString(TokenType type) {
   switch (type) {
@@ -100,10 +100,10 @@ std::string toString(TokenType type) {
     return "TT_SRC";
   case TokenType::TT_PRP:
     return "TT_PRP";
-	case TokenType::TT_META:
-		return "TT_META";
-	case TokenType::TT_STRICT:
-		return "TT_STRICT";
+  case TokenType::TT_META:
+    return "TT_META";
+  case TokenType::TT_STRICT:
+    return "TT_STRICT";
   default:
     return "ILLEGAL";
   }

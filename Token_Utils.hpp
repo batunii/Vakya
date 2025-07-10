@@ -4,6 +4,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 enum class TokenType {
   TT_ILL,
@@ -55,6 +56,7 @@ enum class TokenType {
 extern const std::unordered_map<std::string, TokenType> keywords;
 extern const std::unordered_map<TokenType, std::string> operators_map;
 extern const std::unordered_map<std::string, std::string> isto_operators;
+extern const std::unordered_set<TokenType> user_values;
 // Convert TokenType to string name (e.g., TT_AT -> "TT_AT")
 std::string toString(TokenType type);
 
