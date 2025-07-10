@@ -38,8 +38,8 @@ bool Lexer::is_keyword_or_usr(std::string &given_word) {
   auto it = keywords.find(given_word);
   if (it != keywords.end() && this->prev_token.t_type == TokenType::TT_AT) {
     this->t_list.pop_back();
-    this->t_list.emplace_back(it->second,
-                              this->next_pos - (given_word.length()) - 1);
+    this->t_list.emplace_back(
+        it->second, this->next_pos - (given_word.length()) - 1, given_word);
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_HH) {
     this->t_list.pop_back();

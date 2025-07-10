@@ -2,18 +2,12 @@
 #include "Vakya_Error.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
-#include "Vakya_Prompt.cpp"
-#include <cstddef>
 #include <iostream>
-#include <optional>
-#include <string>
-#include <utility>
-#include <vector>
 
 class AST {
   size_t curr_token = 0;
   size_t next_token = 1;
-  Lexer *lexer;
+  Lexer &lexer;
   std::vector<Program *> program_steps;
   Program *curr_program;
   std::optional<Program *> get_curr_program() {
@@ -23,9 +17,9 @@ class AST {
   }
 
   std::optional<Tokens> advance_token() {
-    if (curr_token < lexer->t_list.size()) {
+    if (curr_token < lexer.t_list.size()) {
       ++next_token;
-      return lexer->t_list[this->curr_token++];
+      return lexer.t_list[this->curr_token++];
     } else
       return std::nullopt;
   }
@@ -203,11 +197,11 @@ class AST {
         curr_list->emplace();
       curr_list->value().push_back(std::move(curr_condition));
     } else {
-      throw vakya_error("Error with condition arrangement",
-                        new_token
-                            .value_or(Tokens(TokenType::TT_ILL,
-                                             lexer->t_list.back().location))
-                            .location);
+      throw vakya_error(
+          "Error with condition arrangement",
+          new_token
+              .value_or(Tokens(TokenType::TT_ILL, lexer.t_list.back().location))
+              .location);
     }
 
     return cdn_props;
@@ -231,6 +225,9 @@ class AST {
     auto next_token = this->advance_token();
     while (next_token && next_token->t_type != TokenType::TT_EOL) {
       switch (next_token->t_type) {
+      case TokenType::TT_TBL:
+      case TokenType::TT_BL:
+      case TokenType::TT_PAR:
       case TokenType::TT_USR: {
         curr_fmt->type = parse_parenthesis(next_token->t_val);
         break;
@@ -301,8 +298,8 @@ class AST {
   }
 
 public:
-  void start_compiler(Lexer *lexer_input) {
-    this->lexer = lexer_input;
+  AST(Lexer &lexer_) : lexer(lexer_) {}
+  void start_compiler() {
     while (auto curr_token = this->advance_token()) {
       switch (curr_token->t_type) {
       case TokenType::TT_DO: {
@@ -359,9 +356,9 @@ int main() {
   Lexer lexer(code);
   std::cout << lexer.make_tokens() << std::endl;
 
-  AST ast;
+  AST ast(lexer);
   try {
-    ast.start_compiler(&lexer);
+    ast.start_compiler();
     ast.print_programs();
   } catch (vakya_error &ve) {
     std::cout << ve.what() << "\n";
