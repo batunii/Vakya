@@ -91,6 +91,27 @@ class AST {
     }
     return props;
   }
+
+  void parse_condition_new(condition *curr_condition, const Tokens &curr_token,
+                           std::string &token_type) {
+    if (curr_condition->oper.empty() && token_type == "value_key") {
+      curr_condition->key.append(" " + curr_token.t_val);
+    } else if (curr_condition->oper.empty() && token_type == "isto") {
+      auto it_value = isto_operators.find(curr_condition->key);
+      curr_condition->oper =
+          it_value != isto_operators.end() ? it_value->second : " is ";
+    } else if (token_type == "oper") {
+      auto it_value = operators_map.find(curr_token.t_type);
+      curr_condition->oper.append(it_value != operators_map.end()
+                                      ? it_value->second
+                                      : curr_token.t_val);
+    } else if (!curr_condition->oper.empty() && token_type == "value_key") {
+      curr_condition->value.append(" " + curr_token.t_val);
+    } else {
+      throw vakya_error("Error in parsing new condition", curr_token.location);
+    }
+  }
+
   void parse_condition(condition *curr_condition, const Tokens &curr_token,
                        std::string &token_type) {
     if (curr_condition->key.empty() && token_type == "value_key") {
@@ -128,7 +149,7 @@ class AST {
     };
     auto get_condition = [&curr_condition, &new_token,
                           this](std::string &&token_type_var) -> void {
-      parse_condition(curr_condition, new_token.value(), token_type_var);
+      parse_condition_new(curr_condition, new_token.value(), token_type_var);
     };
     while (new_token && new_token->t_type != TokenType::TT_EB) {
       switch (new_token->t_type) {
@@ -166,10 +187,16 @@ class AST {
       case TokenType::TT_EQ:
       case TokenType::TT_GT:
       case TokenType::TT_LT: {
+        if (action_name != "Conditions")
+          throw vakya_error("Operator only allowed in cdn block",
+                            new_token->location);
         get_condition("oper");
         break;
       }
       case TokenType::TT_CL: {
+        if (action_name == "Conditions")
+          throw vakya_error("Key : Value pairs not allowed in Condition block",
+                            new_token->location);
         get_condition("isto");
         break;
       }
