@@ -45,6 +45,7 @@ public:
   ops<ls_props<std::string>> *src_token;
   fmt_class *fmt_token;
   ops<ls_props<condition>> *cdn_token;
+	bool strict;
 };
 
 // ----------- ostream overloads (inlined templates) -----------
@@ -125,6 +126,9 @@ inline std::ostream &operator<<(std::ostream &os, const Program &program) {
   if (program.cdn_token) {
     os << "[CDN Token]\n" << *program.cdn_token << "\n";
   }
+	if (program.strict) {
+		os << "Strict : True \n";
+	}
   return os;
 }
 

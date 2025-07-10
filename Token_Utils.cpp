@@ -8,7 +8,7 @@ const std::unordered_map<std::string, TokenType> keywords = {
     {"table", TokenType::TT_TBL}, {"asc", TokenType::TT_ASC},
     {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP},
     {"src", TokenType::TT_SRC},   {"prop", TokenType::TT_PRP},
-		{"meta", TokenType::TT_META}
+		{"meta", TokenType::TT_META}, {"strict", TokenType::TT_STRICT}
 };
 
 const std::unordered_map<TokenType, std::string> operators_map = {
@@ -102,6 +102,8 @@ std::string toString(TokenType type) {
     return "TT_PRP";
 	case TokenType::TT_META:
 		return "TT_META";
+	case TokenType::TT_STRICT:
+		return "TT_STRICT";
   default:
     return "ILLEGAL";
   }

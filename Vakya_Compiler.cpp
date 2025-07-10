@@ -3,6 +3,7 @@
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
 #include "Vakya_Prompt.cpp"
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -48,6 +49,7 @@ class AST {
         curr_list->emplace();
       return curr_list->value();
     };
+    std::string curr_value = "";
     std::optional<Tokens> next_token = this->advance_token();
     while (next_token && (next_token->t_type != TokenType::TT_RP)) {
       switch (next_token->t_type) {
@@ -60,12 +62,16 @@ class AST {
         break;
       }
       case TokenType::TT_CM: {
+        ensure_list_ready().emplace_back(std::move(curr_value));
+        curr_value.clear();
         curr_list = &props->action_props.should;
         break;
       }
       case TokenType::TT_STR:
       case TokenType::TT_ATTR: {
-        ensure_list_ready().emplace_back(next_token->t_val);
+        curr_value.append(" " + next_token->t_val);
+        // ensure_list_ready().end()->append(next_token->t_val);
+        // ensure_list_ready().emplace_back(next_token->t_val);
         break;
       }
       case TokenType::TT_CL: {
@@ -73,7 +79,7 @@ class AST {
         if (action_name != "source" && new_token.has_value() &&
             (new_token->t_type == TokenType::TT_ATTR ||
              new_token->t_type == TokenType::TT_STR)) {
-          ensure_list_ready().back().append(" as " + new_token->t_val);
+          curr_value.append(" as " + new_token->t_val);
         } else {
           throw vakya_error("Error in parsing parenthesis, with colon",
                             new_token->location);
@@ -89,6 +95,8 @@ class AST {
       }
       next_token = this->advance_token();
     }
+    if (!curr_value.empty())
+      ensure_list_ready().emplace_back(std::move(curr_value));
     return props;
   }
 
@@ -254,6 +262,7 @@ class AST {
     }
     this->curr_program->cdn_token = this->parse_braces("Conditions");
   }
+
   void parse_do() {
     auto action_token = this->advance_token();
     if (!action_token || (action_token->t_type != TokenType::TT_ATTR &&
@@ -312,6 +321,13 @@ public:
       case TokenType::TT_CDN: {
         parse_cdn();
         break;
+      }
+      case TokenType::TT_STRICT: {
+        if (this->get_curr_program().has_value())
+          this->get_curr_program().value()->strict = true;
+        else
+          throw vakya_error("Strict is an ending command, used without do :",
+                            curr_token->location);
       }
       case TokenType::TT_EOL: {
         break;
