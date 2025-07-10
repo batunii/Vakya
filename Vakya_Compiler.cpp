@@ -101,7 +101,6 @@ class AST {
     } else if (curr_condition.oper.empty() && token_type == "isto") {
       curr_condition.key.erase(curr_condition.key.find(" "),1);
       auto it_value = isto_operators.find(curr_condition.key);
-      std::cout<<" Logging condition key "<<curr_condition.key;
       curr_condition.oper =
           it_value != isto_operators.end() ? it_value->second : " is ";
     } else if (token_type == "oper") {
