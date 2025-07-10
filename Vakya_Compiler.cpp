@@ -99,7 +99,9 @@ class AST {
     if (curr_condition.oper.empty() && token_type == "value_key") {
       curr_condition.key.append(" " + curr_token.t_val);
     } else if (curr_condition.oper.empty() && token_type == "isto") {
+      curr_condition.key.erase(curr_condition.key.find(" "),1);
       auto it_value = isto_operators.find(curr_condition.key);
+      std::cout<<" Logging condition key "<<curr_condition.key;
       curr_condition.oper =
           it_value != isto_operators.end() ? it_value->second : " is ";
     } else if (token_type == "oper") {
@@ -182,8 +184,8 @@ class AST {
       }
       case TokenType::TT_CL: {
         if (action_name == "Conditions")
-          throw vakya_error("Key : Value pairs not allowed in Condition block",
-                            new_token->location);
+          {throw vakya_error("Key : Value pairs not allowed in Condition block",
+                            new_token->location);}
         get_condition("isto");
         break;
       }
@@ -196,7 +198,7 @@ class AST {
       if (!curr_list->has_value())
         curr_list->emplace();
       curr_list->value().push_back(std::move(curr_condition));
-    } else {
+    } else if(!curr_condition.key.empty()){
       throw vakya_error(
           "Error with condition arrangement",
           new_token
