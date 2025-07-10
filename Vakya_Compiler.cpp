@@ -55,9 +55,12 @@ class AST {
         curr_list = &props->action_props.could;
         break;
       }
+      case TokenType::TT_EOL:
       case TokenType::TT_CM: {
-        ensure_list_ready().emplace_back(std::move(curr_value));
-        curr_value.clear();
+        if (!curr_value.empty()) {
+          ensure_list_ready().emplace_back(std::move(curr_value));
+          curr_value.clear();
+        }
         curr_list = &props->action_props.should;
         break;
       }
@@ -241,6 +244,13 @@ class AST {
         curr_fmt->meta = parse_braces("Meta");
         break;
       }
+      case TokenType::TT_EOL: {
+        if (!curr_fmt->type->action_name.empty())
+          return;
+        else
+          throw vakya_error("Type of fmt is required to be inline with FMT",
+                            next_token->location);
+      }
       default:
         throw vakya_error("Wrong token at fmt", next_token->location);
       }
@@ -317,6 +327,26 @@ public:
       }
       case TokenType::TT_FMT: {
         parse_fmt();
+        break;
+      }
+      case TokenType::TT_TBL:
+      case TokenType::TT_BL:
+      case TokenType::TT_PAR:
+      case TokenType::TT_USR: {
+        if (this->curr_program->fmt_token)
+          this->curr_program->fmt_token->type =
+              parse_parenthesis(curr_token->t_val);
+        break;
+      }
+      case TokenType::TT_PRP: {
+        if (this->curr_program->fmt_token)
+          this->curr_program->fmt_token->order =
+              parse_braces("Order Properties");
+        break;
+      }
+      case TokenType::TT_META: {
+        if (this->curr_program->fmt_token)
+          this->curr_program->fmt_token->meta = parse_braces("Meta");
         break;
       }
       case TokenType::TT_CDN: {
