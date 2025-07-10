@@ -3,11 +3,11 @@
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
 #include "Vakya_Prompt.cpp"
-#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 class AST {
@@ -100,21 +100,21 @@ class AST {
     return props;
   }
 
-  void parse_condition(condition *curr_condition, const Tokens &curr_token,
+  void parse_condition(condition &curr_condition, const Tokens &curr_token,
                        std::string &token_type) {
-    if (curr_condition->oper.empty() && token_type == "value_key") {
-      curr_condition->key.append(" " + curr_token.t_val);
-    } else if (curr_condition->oper.empty() && token_type == "isto") {
-      auto it_value = isto_operators.find(curr_condition->key);
-      curr_condition->oper =
+    if (curr_condition.oper.empty() && token_type == "value_key") {
+      curr_condition.key.append(" " + curr_token.t_val);
+    } else if (curr_condition.oper.empty() && token_type == "isto") {
+      auto it_value = isto_operators.find(curr_condition.key);
+      curr_condition.oper =
           it_value != isto_operators.end() ? it_value->second : " is ";
     } else if (token_type == "oper") {
       auto it_value = operators_map.find(curr_token.t_type);
-      curr_condition->oper.append(it_value != operators_map.end()
-                                      ? it_value->second
-                                      : curr_token.t_val);
-    } else if (!curr_condition->oper.empty() && token_type == "value_key") {
-      curr_condition->value.append(" " + curr_token.t_val);
+      curr_condition.oper.append(it_value != operators_map.end()
+                                     ? it_value->second
+                                     : curr_token.t_val);
+    } else if (!curr_condition.oper.empty() && token_type == "value_key") {
+      curr_condition.value.append(" " + curr_token.t_val);
     } else {
       throw vakya_error("Error in parsing new condition", curr_token.location);
     }
@@ -122,7 +122,7 @@ class AST {
 
   ops<ls_props<condition>> *parse_braces(std::string &&action_name) {
     if (auto new_token = this->advance_token();
-        !(new_token && new_token->t_type == TokenType::TT_SB))
+        !(new_token.has_value() && new_token->t_type == TokenType::TT_SB))
       throw vakya_error("Wrong syntax for Condition / key Value pair",
                         new_token->location);
     ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
@@ -130,15 +130,18 @@ class AST {
     std::optional<std::vector<condition>> *curr_list =
         &cdn_props->action_props.should;
     std::optional<Tokens> new_token = this->advance_token();
-    condition *curr_condition = new condition();
+    condition curr_condition = condition();
     auto validate_token = [&curr_condition]() -> bool {
-      return !(curr_condition->key.empty());
+      return ((!curr_condition.key.empty() && curr_condition.oper.empty() &&
+               curr_condition.value.empty()) ||
+              !(curr_condition.key.empty() || curr_condition.oper.empty() ||
+                curr_condition.value.empty()));
     };
     auto get_condition = [&curr_condition, &new_token,
                           this](std::string &&token_type_var) -> void {
       parse_condition(curr_condition, new_token.value(), token_type_var);
     };
-    while (new_token && new_token->t_type != TokenType::TT_EB) {
+    while (new_token.has_value() && new_token->t_type != TokenType::TT_EB) {
       switch (new_token->t_type) {
       case TokenType::TT_EX: {
         if (auto peeked_token = this->peek_token();
@@ -153,19 +156,17 @@ class AST {
         curr_list = &cdn_props->action_props.could;
         break;
       }
-      case TokenType::TT_EOL: {
-        break;
-      }
+      case TokenType::TT_EOL:
+        if (!validate_token())
+          break;
+        [[fallthrough]];
       case TokenType::TT_CM: {
         if (validate_token()) {
           if (!curr_list->has_value()) {
             curr_list->emplace();
           }
-          curr_list->value().push_back(*curr_condition);
-          curr_condition = new condition();
-        } else {
-          throw vakya_error("Error in parsing braces in commas ",
-                            new_token->location);
+          curr_list->value().push_back(std::move(curr_condition));
+          curr_condition = condition();
         }
         curr_list = &cdn_props->action_props.should;
         break;
@@ -197,9 +198,17 @@ class AST {
       }
       new_token = this->advance_token();
     }
-    if (!curr_list->has_value())
-      curr_list->emplace();
-    curr_list->value().push_back(*curr_condition);
+    if (validate_token()) {
+      if (!curr_list->has_value())
+        curr_list->emplace();
+      curr_list->value().push_back(std::move(curr_condition));
+    } else {
+      throw vakya_error("Error with condition arrangement",
+                        new_token
+                            .value_or(Tokens(TokenType::TT_ILL,
+                                             lexer->t_list.back().location))
+                            .location);
+    }
 
     return cdn_props;
   }
