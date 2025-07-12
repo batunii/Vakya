@@ -47,9 +47,9 @@ enum class TokenType {
   TT_STR,
   TT_USR,
   TT_SRC,
-	TT_PRP,
-	TT_META,
-	TT_STRICT
+  TT_PRP,
+  TT_META,
+  TT_STRICT
 };
 
 // Keyword token map (reserved words)
@@ -57,6 +57,7 @@ extern const std::unordered_map<std::string, TokenType> keywords;
 extern const std::unordered_map<TokenType, std::string> operators_map;
 extern const std::unordered_map<std::string, std::string> isto_operators;
 extern const std::unordered_set<TokenType> user_values;
+extern const std::unordered_map<std::string, std::string> macro_map;
 // Convert TokenType to string name (e.g., TT_AT -> "TT_AT")
 std::string toString(TokenType type);
 

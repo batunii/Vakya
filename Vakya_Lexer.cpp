@@ -1,5 +1,6 @@
 #include "Vakya_Lexer.hpp"
 #include "Token_Utils.hpp"
+#include "Vakya_Error.hpp"
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -49,9 +50,7 @@ bool Lexer::is_keyword_or_usr(std::string &given_word) {
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_AT &&
              it == keywords.end()) {
-    std::cout << "\'" << given_word << "\'"
-              << " is not a recognized system keyword at : "
-              << this->prev_token.location << ".\n";
+		throw vakya_error(given_word+" is not a recognized system keyword", this->prev_token.location);
   }
   return false;
 }

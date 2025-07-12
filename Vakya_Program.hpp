@@ -1,8 +1,10 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
+#include "Token_Utils.hpp"
 #include <optional>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -45,11 +47,20 @@ public:
   ops<ls_props<std::string>> *src_token;
   fmt_class *fmt_token;
   ops<ls_props<condition>> *cdn_token;
-	bool strict;
+  bool strict;
 };
 
 // ----------- ostream overloads (inlined templates) -----------
 
+inline std::stringstream &operator<<(std::stringstream &os,
+                                     const condition &cdn) {
+  os << cdn.key;
+  if (!cdn.oper.empty())
+    os << cdn.oper;
+  if (!cdn.value.empty())
+    os << cdn.value;
+  return os;
+}
 // ostream for condition
 inline std::ostream &operator<<(std::ostream &os, const condition &cdn) {
   os << "Key : " << cdn.key << "\n";
@@ -58,6 +69,30 @@ inline std::ostream &operator<<(std::ostream &os, const condition &cdn) {
   return os;
 }
 
+inline std::stringstream &
+operator<<(std::stringstream &os,
+           const std::optional<std::vector<condition>> &list) {
+  if (list.has_value()) {
+    for (const auto &item : list.value()) {
+      std::string key = macro_map.find(item.key) != macro_map.end()
+                            ? macro_map.at(item.key)
+                            : item.key;
+      os << "\n- " << key + " " << item.oper + " " << item.value;
+    }
+  }
+  return os;
+}
+
+inline std::stringstream &
+operator<<(std::stringstream &os,
+           const std::optional<std::vector<std::string>> &list) {
+  if (list.has_value()) {
+    for (const auto &item : list.value()) {
+      os << "\n- " << item;
+    }
+  }
+  return os;
+}
 // ostream for ls_props<T>
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const ls_props<T> &ls) {
@@ -82,6 +117,28 @@ std::ostream &operator<<(std::ostream &os, const ls_props<T> &ls) {
   return os;
 }
 
+template <typename T>
+std::stringstream &operator<<(std::stringstream &os, const ls_props<T> &ls) {
+  if (ls.must.has_value()) {
+    os << "These are priority 1 Must:\n";
+    for (const auto &item : ls.must.value()) {
+      os << "  - " << item << "\n";
+    }
+  }
+  if (ls.should.has_value()) {
+    os << "These are priority 2 Should:\n";
+    for (const auto &item : ls.should.value()) {
+      os << "  - " << item << "\n";
+    }
+  }
+  if (ls.could.has_value()) {
+    os << "These are priority 3 <Optional / Good to have> Could:\n";
+    for (const auto &item : ls.could.value()) {
+      os << "  - " << item << "\n";
+    }
+  }
+  return os;
+}
 // ostream for ops<T>
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const ops<T> &op) {
@@ -126,9 +183,9 @@ inline std::ostream &operator<<(std::ostream &os, const Program &program) {
   if (program.cdn_token) {
     os << "[CDN Token]\n" << *program.cdn_token << "\n";
   }
-	if (program.strict) {
-		os << "Strict : True \n";
-	}
+  if (program.strict) {
+    os << "Strict : True \n";
+  }
   return os;
 }
 
