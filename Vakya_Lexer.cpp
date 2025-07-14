@@ -16,38 +16,38 @@ bool Tokens::operator==(const Tokens &other) const {
 Lexer::Lexer(const char *code_i)
     : code(code_i), curr_char('\0'), next_pos(0), prev_token() {}
 Lexer::Lexer(std::string &code_i)
-    : code(code_i), t_list(std::vector<Tokens>()), curr_char('\0'), next_pos(0),
-      prev_token() {}
+    : code(code_i), t_list(), curr_char('\0'), next_pos(0), prev_token() {}
+
 char Lexer::advance() {
   if (this->next_pos < code.length())
     this->curr_char = this->code[this->next_pos++];
   else
     this->curr_char = '\0';
-  if (this->t_list.size() > 0)
-    prev_token = this->t_list[this->t_list.size() - 1];
+  if (!this->t_list.empty())
+    prev_token = this->t_list.back();
   return this->curr_char;
 }
 
 void Lexer::handle_quotes() {
-  std::string args = "";
+  std::string args;
   while (this->curr_char && this->curr_char != symbol(TokenType::TT_QT)) {
     args += this->curr_char;
     this->advance();
   }
-  this->t_list.emplace_back(TokenType::TT_STR, this->next_pos - (args.length()),
-                            args);
+  this->t_list.emplace_back(TokenType::TT_STR, this->next_pos - args.length(), args);
 }
+
 bool Lexer::is_keyword_or_usr(std::string &given_word) {
   auto it = keywords.find(given_word);
   if (it != keywords.end() && this->prev_token.t_type == TokenType::TT_AT) {
     this->t_list.pop_back();
     this->t_list.emplace_back(
-        it->second, this->next_pos - (given_word.length()) - 1, given_word);
+        it->second, this->next_pos - given_word.length() - 1, given_word);
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_HH) {
     this->t_list.pop_back();
     this->t_list.emplace_back(TokenType::TT_USR,
-                              this->next_pos - (given_word.length()) - 1,
+                              this->next_pos - given_word.length() - 1,
                               given_word);
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_AT &&
@@ -59,7 +59,7 @@ bool Lexer::is_keyword_or_usr(std::string &given_word) {
 }
 
 void Lexer::handle_string() {
-  std::string attr = "";
+  std::string attr;
   while (this->curr_char &&
          (std::isalnum(this->curr_char) || this->curr_char == '_')) {
     attr += this->curr_char;
@@ -67,7 +67,7 @@ void Lexer::handle_string() {
   }
   if (!this->is_keyword_or_usr(attr))
     this->t_list.emplace_back(TokenType::TT_ATTR,
-                              this->next_pos - (attr.length()), attr);
+                              this->next_pos - attr.length(), attr);
 
   this->next_pos--;
 }
@@ -155,7 +155,6 @@ std::vector<Tokens> &Lexer::make_tokens() {
 }
 
 std::ostream &operator<<(std::ostream &os, Tokens &token) {
-
   if (token.t_val.empty())
     os << token.t_type << "{" << token.location << "}";
   else

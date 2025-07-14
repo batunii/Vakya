@@ -1,8 +1,9 @@
 #include "Vakya_Compiler.hpp"
 #include "Vakya_Error.hpp"
 #include <iostream>
+#include <memory>
 
-std::optional<Program *> AST::get_curr_program() {
+std::optional<std::shared_ptr<Program>> AST::get_curr_program() {
   if (size_t program_size = this->program_steps.size())
     return this->program_steps[program_size - 1];
   return std::nullopt;
@@ -21,12 +22,13 @@ std::optional<Tokens> AST::peek_token() {
   --this->next_token;
   return next_token;
 }
-ops<ls_props<std::string>> *
+
+std::unique_ptr<ops<ls_props<std::string>>> 
 AST::parse_parenthesis(const std::string &action_name) {
   if (auto next_token = this->advance_token();
       !(next_token.has_value() && next_token->t_type == TokenType::TT_LP))
     throw vakya_error("Wrong parenthesis syntax", next_token->location);
-  ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
+  auto props = std::make_unique<ops<ls_props<std::string>>>();
   props->action_name = action_name;
   std::optional<std::vector<std::string>> *curr_list =
       &props->action_props.should;
@@ -59,8 +61,6 @@ AST::parse_parenthesis(const std::string &action_name) {
     case TokenType::TT_STR:
     case TokenType::TT_ATTR: {
       curr_value.append(" " + next_token->t_val);
-      // ensure_list_ready().end()->append(next_token->t_val);
-      // ensure_list_ready().emplace_back(next_token->t_val);
       break;
     }
     case TokenType::TT_CL: {
@@ -73,7 +73,6 @@ AST::parse_parenthesis(const std::string &action_name) {
         throw vakya_error("Error in parsing parenthesis, with colon",
                           new_token->location);
       }
-
       break;
     }
     default:
@@ -109,12 +108,13 @@ void AST::parse_condition(condition &curr_condition, const Tokens &curr_token,
   }
 }
 
-ops<ls_props<condition>> *AST::parse_braces(std::string &&action_name) {
+std::unique_ptr<ops<ls_props<condition>>>
+AST::parse_braces(std::string &&action_name) {
   if (auto new_token = this->advance_token();
       !(new_token.has_value() && new_token->t_type == TokenType::TT_SB))
     throw vakya_error("Wrong syntax for Condition / key Value pair",
                       new_token->location);
-  ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
+  auto cdn_props = std::make_unique<ops<ls_props<condition>>>();
   cdn_props->action_name = action_name;
   std::optional<std::vector<condition>> *curr_list =
       &cdn_props->action_props.should;
@@ -202,6 +202,7 @@ ops<ls_props<condition>> *AST::parse_braces(std::string &&action_name) {
 
   return cdn_props;
 }
+
 void AST::parse_src() {
   if (get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -210,14 +211,15 @@ void AST::parse_src() {
     throw vakya_error("No current Program", 0);
   }
 }
+
 void AST::parse_fmt() {
   if (this->get_curr_program().has_value())
     this->curr_program = this->get_curr_program().value();
   else {
     throw vakya_error("No current program found for fmt", 0);
   }
-  fmt_class *curr_fmt = new fmt_class();
-  this->curr_program->fmt_token = curr_fmt;
+  auto curr_fmt = std::make_unique<fmt_class>();
+  this->curr_program->fmt_token = std::move(curr_fmt);
   auto next_token = this->advance_token();
   while (next_token && next_token->t_type != TokenType::TT_EOL) {
     switch (next_token->t_type) {
@@ -225,19 +227,19 @@ void AST::parse_fmt() {
     case TokenType::TT_BL:
     case TokenType::TT_PAR:
     case TokenType::TT_USR: {
-      curr_fmt->type = parse_parenthesis(next_token->t_val);
+      this->curr_program->fmt_token->type = this->parse_parenthesis(next_token->t_val);
       break;
     }
     case TokenType::TT_PRP: {
-      curr_fmt->order = parse_braces("Order Properties");
+      this->curr_program->fmt_token->order = this->parse_braces("Order Properties");
       break;
     }
     case TokenType::TT_META: {
-      curr_fmt->meta = parse_braces("Meta");
+      this->curr_program->fmt_token->meta = this->parse_braces("Meta");
       break;
     }
     case TokenType::TT_EOL: {
-      if (!curr_fmt->type->action_name.empty())
+      if (this->curr_program->fmt_token->type && !this->curr_program->fmt_token->type->action_name.empty())
         return;
       else
         throw vakya_error("Type of fmt is required to be inline with FMT",
@@ -249,6 +251,7 @@ void AST::parse_fmt() {
     next_token = this->advance_token();
   }
 }
+
 void AST::parse_cdn() {
   if (this->get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -259,9 +262,9 @@ void AST::parse_cdn() {
 }
 
 void AST::parse_do() {
-  this->curr_program = new Program();
-  ops<std::string> *new_do_token = new ops<std::string>();
-  curr_program->do_token = new_do_token;
+  this->curr_program = std::make_shared<Program>();
+  auto new_do_token = std::make_unique<ops<std::string>>();
+  curr_program->do_token = std::move(new_do_token);
   curr_program->do_token->action_name = "do";
   auto new_token = this->advance_token();
   while (new_token && new_token->t_type != TokenType::TT_EOL) {
@@ -281,9 +284,8 @@ void AST::parse_do() {
 }
 
 void AST::parse_on() {
-
-  ops<std::string> *new_on_token = new ops<std::string>();
-  curr_program->on_token = new_on_token;
+  auto new_on_token = std::make_unique<ops<std::string>>();
+  curr_program->on_token = std::move(new_on_token);
   curr_program->on_token->action_name = "on";
   auto new_token = this->advance_token();
   while (new_token && new_token->t_type != TokenType::TT_EOL) {
@@ -295,12 +297,12 @@ void AST::parse_on() {
     default:
       throw vakya_error("Token expect after on", new_token->location);
     }
-
     new_token = this->advance_token();
   }
 }
 
 AST::AST(Lexer &lexer_) : lexer(lexer_) {}
+
 void AST::start_compiler() {
   while (auto curr_token = this->advance_token()) {
     switch (curr_token->t_type) {
@@ -360,11 +362,13 @@ void AST::start_compiler() {
     }
   }
 }
-std::optional<Program *> AST::get_program() {
+
+std::optional<std::shared_ptr<Program>> AST::get_program() {
   if (this->curr_program)
     return this->curr_program;
   return std::nullopt;
 }
+
 void AST::print_programs() {
   for (const auto &prgrm : this->program_steps) {
     std::cout << *prgrm << "\n";

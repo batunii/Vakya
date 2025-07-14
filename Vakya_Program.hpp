@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
 
 // ops<T>: action_name and its associated properties
 template <typename T> class ops {
@@ -34,20 +35,20 @@ public:
 // fmt_class: formatting structure with type, order, and metadata
 class fmt_class {
 public:
-  ops<ls_props<std::string>> *type;
-  ops<ls_props<condition>> *order;
-  ops<ls_props<condition>> *meta;
+  std::unique_ptr<ops<ls_props<std::string>>> type;
+  std::unique_ptr<ops<ls_props<condition>>> order;
+  std::unique_ptr<ops<ls_props<condition>>> meta;
 };
 
 // Program: full program structure
 class Program {
 public:
-  ops<std::string> *do_token;
-  ops<std::string> *on_token;
-  ops<ls_props<std::string>> *src_token;
-  fmt_class *fmt_token;
-  ops<ls_props<condition>> *cdn_token;
-  bool strict;
+  std::unique_ptr<ops<std::string>> do_token;
+  std::unique_ptr<ops<std::string>> on_token;
+  std::unique_ptr<ops<ls_props<std::string>>> src_token;
+  std::unique_ptr<fmt_class> fmt_token;
+  std::unique_ptr<ops<ls_props<condition>>> cdn_token;
+  bool strict = false;
 };
 
 // ----------- ostream overloads (inlined templates) -----------
@@ -69,8 +70,8 @@ inline std::ostream &operator<<(std::ostream &os, const condition &cdn) {
   return os;
 }
 
-inline std::stringstream &
-operator<<(std::stringstream &os,
+inline std::ostream &
+operator<<(std::ostream &os,
            const std::optional<std::vector<condition>> &list) {
   if (list.has_value()) {
     for (const auto &item : list.value()) {
@@ -83,8 +84,8 @@ operator<<(std::stringstream &os,
   return os;
 }
 
-inline std::stringstream &
-operator<<(std::stringstream &os,
+inline std::ostream &
+operator<<(std::ostream &os,
            const std::optional<std::vector<std::string>> &list) {
   if (list.has_value()) {
     for (const auto &item : list.value()) {
@@ -117,28 +118,6 @@ std::ostream &operator<<(std::ostream &os, const ls_props<T> &ls) {
   return os;
 }
 
-template <typename T>
-std::stringstream &operator<<(std::stringstream &os, const ls_props<T> &ls) {
-  if (ls.must.has_value()) {
-    os << "These are priority 1 Must:\n";
-    for (const auto &item : ls.must.value()) {
-      os << "  - " << item << "\n";
-    }
-  }
-  if (ls.should.has_value()) {
-    os << "These are priority 2 Should:\n";
-    for (const auto &item : ls.should.value()) {
-      os << "  - " << item << "\n";
-    }
-  }
-  if (ls.could.has_value()) {
-    os << "These are priority 3 <Optional / Good to have> Could:\n";
-    for (const auto &item : ls.could.value()) {
-      os << "  - " << item << "\n";
-    }
-  }
-  return os;
-}
 // ostream for ops<T>
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const ops<T> &op) {
