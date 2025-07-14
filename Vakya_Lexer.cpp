@@ -13,6 +13,8 @@ bool Tokens::operator==(const Tokens &other) const {
   return this->t_type == other.t_type && this->t_val == other.t_val;
 }
 
+Lexer::Lexer(const char *code_i)
+    : code(code_i), curr_char('\0'), next_pos(0), prev_token() {}
 Lexer::Lexer(std::string &code_i)
     : code(code_i), t_list(std::vector<Tokens>()), curr_char('\0'), next_pos(0),
       prev_token() {}
@@ -50,7 +52,8 @@ bool Lexer::is_keyword_or_usr(std::string &given_word) {
     return true;
   } else if (this->prev_token.t_type == TokenType::TT_AT &&
              it == keywords.end()) {
-		throw vakya_error(given_word+" is not a recognized system keyword", this->prev_token.location);
+    throw vakya_error(given_word + " is not a recognized system keyword",
+                      this->prev_token.location);
   }
   return false;
 }

@@ -6,7 +6,7 @@
 class Tokens {
 public:
   TokenType t_type;
-  size_t location =0;
+  size_t location = 0;
   std::string t_val;
   Tokens();
   Tokens(TokenType, size_t, const std::string & = "");
@@ -21,6 +21,7 @@ public:
   size_t next_pos;
   Tokens prev_token;
   Lexer(std::string &);
+  Lexer(const char *);
   char advance();
   void handle_quotes();
   bool is_keyword_or_usr(std::string &);

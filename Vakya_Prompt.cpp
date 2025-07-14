@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
+static std::string vakya_result_s;
+static std::string vakya_err_s;
+
 void add_header(std::stringstream &prompt) {
   prompt << "========================================================\n"
          << "TASK BRIEF & EXECUTION POLICY\n"
@@ -49,9 +53,10 @@ void do_on(std::stringstream &prompt, Program *prgrm) {
   prompt << "============================================================\n"
          << "ACTION\n"
          << "------------------------------------------------------------\n"
-         << "The user wants you to: " << prgrm->do_token->action_props + "\n"
-         << "On the topic and Target entity: " + prgrm->on_token->action_props +
-                "\n";
+         << "The user wants you to: " << prgrm->do_token->action_props + "\n";
+  if (prgrm->on_token)
+    prompt << "On the topic and Target entity: " +
+                  prgrm->on_token->action_props + "\n";
 }
 
 void add_sources(std::stringstream &prompt, Program *prgrm) {
@@ -238,6 +243,25 @@ std::string generate_prompt(std::stringstream &out, Program *prgrm) {
   add_footer(out);
   return out.str();
 }
+
+const char *generate_vakya_prompt(const char *input_code) {
+  Lexer lexer(input_code);
+  AST ast(lexer);
+  std::stringstream prompt;
+  try {
+    lexer.make_tokens();
+    ast.start_compiler();
+    std::optional<Program *> prgrm = ast.get_program();
+    if (prgrm.has_value()) {
+      vakya_result_s = generate_prompt(prompt, *prgrm);
+      return vakya_result_s.c_str();
+    } else
+      throw vakya_error("No Program object found", -1);
+  } catch (vakya_error &ve) {
+    return ve.what();
+  }
+}
+
 int main() {
 
   std::string code, line;
@@ -245,19 +269,5 @@ int main() {
   while (std::getline(std::cin, line)) {
     code += line + "\n"; // Preserve line breaks
   }
-
-  std::stringstream prompt;
-  Lexer lexer(code);
-  AST ast(lexer);
-  try {
-    std::cout << lexer.make_tokens() << std::endl;
-    ast.start_compiler();
-    std::optional<Program *> prgrm = ast.get_program();
-    if (prgrm.has_value()) {
-      // ast.print_programs();
-      std::cout << generate_prompt(prompt, *prgrm);
-    }
-  } catch (vakya_error &ve) {
-    std::cout << ve.what() << "\n";
-  }
+  std::cout << generate_vakya_prompt(code.c_str());
 }
