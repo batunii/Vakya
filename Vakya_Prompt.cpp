@@ -2,6 +2,7 @@
 #include "Vakya_Error.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
+#include <emscripten.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -244,6 +245,8 @@ std::string generate_prompt(std::stringstream &out, Program *prgrm) {
   return out.str();
 }
 
+extern "C" {
+EMSCRIPTEN_KEEPALIVE
 const char *generate_vakya_prompt(const char *input_code) {
   Lexer lexer(input_code);
   AST ast(lexer);
@@ -261,8 +264,9 @@ const char *generate_vakya_prompt(const char *input_code) {
     return ve.what();
   }
 }
+}
 
-int main() {
+/*int main() {
 
   std::string code, line;
   std::cout << "Vakya (enter multiple lines, Ctrl+D to end input):\n";
@@ -270,4 +274,4 @@ int main() {
     code += line + "\n"; // Preserve line breaks
   }
   std::cout << generate_vakya_prompt(code.c_str());
-}
+}*/
