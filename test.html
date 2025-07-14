@@ -1,0 +1,21 @@
+<script type="module">
+  import VakyaModule from './Vakya.js';
+
+
+  fetch("Vakya.wasm")
+  .then(response => response.arrayBuffer())
+  .then(wasmBinary => {
+    VakyaModule({
+      wasmBinary,
+    }).then((Module) => {
+      const result = Module.ccall(
+        'generate_vakya_prompt',
+        'string',
+        ['string'],
+        ['@do something']
+      );
+      console.log(result);
+    });
+  });
+
+</script>
