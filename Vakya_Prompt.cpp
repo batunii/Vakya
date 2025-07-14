@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <memory>
 
 static std::string vakya_result_s;
 static std::string vakya_err_s;
@@ -49,7 +50,7 @@ void add_footer(std::stringstream &prompt) {
       << "END OF DSL-INTERPRETED PROMPT\n"
       << "============================================================\n";
 }
-void do_on(std::stringstream &prompt, Program *prgrm) {
+void do_on(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
   prompt << "============================================================\n"
          << "ACTION\n"
          << "------------------------------------------------------------\n"
@@ -59,7 +60,7 @@ void do_on(std::stringstream &prompt, Program *prgrm) {
                   prgrm->on_token->action_props + "\n";
 }
 
-void add_sources(std::stringstream &prompt, Program *prgrm) {
+void add_sources(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
   if (prgrm->src_token) {
     prompt << "============================================================\n"
            << "SOURCES\n"
@@ -83,7 +84,7 @@ void add_sources(std::stringstream &prompt, Program *prgrm) {
     }
   }
 }
-void add_formatting(std::stringstream &prompt, Program *prgrm) {
+void add_formatting(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
   if (!prgrm->fmt_token || !prgrm->fmt_token->type)
     return;
 
@@ -186,7 +187,7 @@ void add_formatting(std::stringstream &prompt, Program *prgrm) {
   }
 }
 
-void add_conditions(std::stringstream &prompt, Program *prgrm) {
+void add_conditions(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
   if (prgrm->src_token) {
     prompt << "============================================================\n"
            << "CONDITIONS\n"
@@ -211,7 +212,7 @@ void add_conditions(std::stringstream &prompt, Program *prgrm) {
     }
   }
 }
-void add_strict(std::stringstream &prompt, Program *prgrm) {
+void add_strict(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
   prompt << "============================================================\n"
          << "STRICTNESS POLICY [@strict]\n"
          << "------------------------------------------------------------\n";
@@ -233,7 +234,7 @@ void add_strict(std::stringstream &prompt, Program *prgrm) {
   }
 }
 
-std::string generate_prompt(std::stringstream &out, Program *prgrm) {
+std::string generate_prompt(std::stringstream &out, std::shared_ptr<Program> prgrm) {
   add_header(out);
   do_on(out, prgrm);
   add_sources(out, prgrm);
@@ -251,9 +252,9 @@ const char *generate_vakya_prompt(const char *input_code) {
   try {
     lexer.make_tokens();
     ast.start_compiler();
-    std::optional<Program *> prgrm = ast.get_program();
+    std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
     if (prgrm.has_value()) {
-      vakya_result_s = generate_prompt(prompt, *prgrm);
+      vakya_result_s = generate_prompt(prompt, prgrm.value());
       return vakya_result_s.c_str();
     } else
       throw vakya_error("No Program object found", -1);
