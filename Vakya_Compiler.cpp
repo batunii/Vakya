@@ -1,4 +1,5 @@
 #include "Vakya_Compiler.hpp"
+#include "Token_Utils.hpp"
 #include "Vakya_Error.hpp"
 #include <iostream>
 #include <memory>
@@ -10,8 +11,8 @@ std::optional<std::shared_ptr<Program>> AST::get_curr_program() {
 }
 
 std::optional<Tokens> AST::advance_token() {
-  if (curr_token < lexer.t_list.size()) {
-    ++next_token;
+  if (this->curr_token < lexer.t_list.size()) {
+    ++this->next_token;
     return lexer.t_list[this->curr_token++];
   } else
     return std::nullopt;
@@ -23,7 +24,7 @@ std::optional<Tokens> AST::peek_token() {
   return next_token;
 }
 
-std::unique_ptr<ops<ls_props<std::string>>> 
+std::unique_ptr<ops<ls_props<std::string>>>
 AST::parse_parenthesis(const std::string &action_name) {
   if (auto next_token = this->advance_token();
       !(next_token.has_value() && next_token->t_type == TokenType::TT_LP))
@@ -227,11 +228,13 @@ void AST::parse_fmt() {
     case TokenType::TT_BL:
     case TokenType::TT_PAR:
     case TokenType::TT_USR: {
-      this->curr_program->fmt_token->type = this->parse_parenthesis(next_token->t_val);
+      this->curr_program->fmt_token->type =
+          this->parse_parenthesis(next_token->t_val);
       break;
     }
     case TokenType::TT_PRP: {
-      this->curr_program->fmt_token->order = this->parse_braces("Order Properties");
+      this->curr_program->fmt_token->order =
+          this->parse_braces("Order Properties");
       break;
     }
     case TokenType::TT_META: {
@@ -239,7 +242,8 @@ void AST::parse_fmt() {
       break;
     }
     case TokenType::TT_EOL: {
-      if (this->curr_program->fmt_token->type && !this->curr_program->fmt_token->type->action_name.empty())
+      if (this->curr_program->fmt_token->type &&
+          !this->curr_program->fmt_token->type->action_name.empty())
         return;
       else
         throw vakya_error("Type of fmt is required to be inline with FMT",
@@ -304,7 +308,9 @@ void AST::parse_on() {
 AST::AST(Lexer &lexer_) : lexer(lexer_) {}
 
 void AST::start_compiler() {
-  while (auto curr_token = this->advance_token()) {
+  bool encountered_ill = false;
+  auto curr_token = this->advance_token();
+  while (curr_token && !encountered_ill) {
     switch (curr_token->t_type) {
     case TokenType::TT_DO: {
       parse_do();
@@ -355,11 +361,16 @@ void AST::start_compiler() {
     case TokenType::TT_EOL: {
       break;
     }
+    case TokenType::TT_ILL: {
+      encountered_ill = true;
+      break;
+    }
     default: {
       throw vakya_error("Unexpected token at root level", curr_token->location);
       break;
     }
     }
+    curr_token = this->advance_token();
   }
 }
 
@@ -374,4 +385,3 @@ void AST::print_programs() {
     std::cout << *prgrm << "\n";
   }
 }
-
