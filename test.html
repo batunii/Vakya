@@ -1,6 +1,7 @@
 <script type="module">
   import VakyaModule from './Vakya.js';
 
+  //code = "@do research \n @on best mobile phones \n @cdn{}"
 
   fetch("Vakya.wasm")
   .then(response => response.arrayBuffer())
@@ -12,7 +13,7 @@
         'generate_vakya_prompt',
         'string',
         ['string'],
-        ['@do something']
+        ["@do research \n @on best mobile phones \n @strict"]
       );
       console.log(result);
     });
