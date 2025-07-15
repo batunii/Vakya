@@ -241,6 +241,7 @@ void AST::parse_fmt() {
       this->curr_program->fmt_token->meta = this->parse_braces("Meta");
       break;
     }
+		case TokenType::TT_ILL:
     case TokenType::TT_EOL: {
       if (this->curr_program->fmt_token->type &&
           !this->curr_program->fmt_token->type->action_name.empty())
