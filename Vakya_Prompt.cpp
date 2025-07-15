@@ -3,7 +3,7 @@
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
 #include <cstdlib>
- #include <emscripten/emscripten.h>
+// #include <emscripten/emscripten.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -247,35 +247,29 @@ std::string generate_prompt(std::stringstream &out,
   add_footer(out);
   return out.str();
 }
-
+/*
  extern "C" {
  EMSCRIPTEN_KEEPALIVE
 const char *generate_vakya_prompt(const char *input_code) {
   Lexer lexer(input_code);
   lexer.make_tokens();
-  //AST ast(lexer);
+  AST ast(lexer);
   std::stringstream prompt;
   try {
-   // ast.start_compiler();
-   /* std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
+    ast.start_compiler();
+    std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
     if (prgrm.has_value()) {
       vakya_result_s = generate_prompt(prompt, prgrm.value());
       return vakya_result_s.c_str();
     } else
       throw vakya_error("No Program object found", -1);
-  */} catch (vakya_error &ve) {
+  } catch (vakya_error &ve) {
     return ve.what();
   }
-	return "Hello";
   }
-  /*	char* return_val =(char*) malloc(3*sizeof(char));
-          return_val[0] = 'h';
-          return_val[1] = 'e';
-          return_val[1] = 'l';
-  //	char return_val[5] = {'h','e','l','l','o'};
-          return return_val;*/
 }
-/*
+*/
+
 int main() {
 
   std::string code, line;
@@ -284,8 +278,8 @@ int main() {
     code += line + "\n"; // Preserve line breaks
   }
   Lexer lexer(code);
-  lexer.make_tokens();
+  std::cout << lexer.make_tokens() << "\n";
   AST ast(lexer);
-	ast.start_compiler();
-	ast.print_programs();
-}*/
+  ast.start_compiler();
+  ast.print_programs();
+}

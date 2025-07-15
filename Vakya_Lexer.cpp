@@ -74,8 +74,8 @@ void Lexer::handle_string() {
     this->t_list[curr_token_pos++] =
         Tokens(TokenType::TT_ATTR, this->next_pos - attr.length(), attr);
 
-    this->next_pos--;
   }
+    --this->next_pos;
 }
 
 std::array<Tokens, 1024> &Lexer::make_tokens() {
@@ -172,7 +172,8 @@ std::array<Tokens, 1024> &Lexer::make_tokens() {
       break;
     default: {
       if (std::isalnum(this->curr_char))
-        handle_string();
+        this->handle_string();
+      // this->next_pos--;
       break;
     }
     }
