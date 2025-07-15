@@ -2,7 +2,7 @@
 #include "Vakya_Error.hpp"
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
-#include <cstdlib>
+#include <cstring>
 #include <emscripten/emscripten.h>
 #include <iostream>
 #include <memory>
@@ -250,20 +250,21 @@ std::string generate_prompt(std::stringstream &out,
 
  extern "C" {
  EMSCRIPTEN_KEEPALIVE
-const char *generate_vakya_prompt(const char *input_code) {
+const char *generate_vakya_prompt(char *input_code) {
+	input_code[strlen(input_code)] = '\n';
   Lexer lexer(input_code);
   lexer.make_tokens();
-  //AST ast(lexer);
-  //std::stringstream prompt;
+  AST ast(lexer);
+  std::stringstream prompt;
   try {
-    //ast.start_compiler();
-	  //std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
-  	  //if (prgrm.has_value()) {
-     //vakya_result_s = generate_prompt(prompt, prgrm.value());
-     // return vakya_result_s.c_str();
-			return "hell";
-  //  } else
-   //   throw vakya_error("No Program object found", -1);
+    ast.start_compiler();
+	  std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
+  	  if (prgrm.has_value()) {
+     vakya_result_s = generate_prompt(prompt, prgrm.value());
+      return vakya_result_s.c_str();
+		//	return input_code;
+    } else
+      throw vakya_error("No Program object found", -1);
   } catch (vakya_error &ve) {
     return ve.what();
   }

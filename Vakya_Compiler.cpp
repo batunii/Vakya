@@ -222,7 +222,7 @@ void AST::parse_fmt() {
   auto curr_fmt = std::make_unique<fmt_class>();
   this->curr_program->fmt_token = std::move(curr_fmt);
   auto next_token = this->advance_token();
-  while (next_token && next_token->t_type != TokenType::TT_EOL) {
+  while (next_token) {
     switch (next_token->t_type) {
     case TokenType::TT_TBL:
     case TokenType::TT_BL:
