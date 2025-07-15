@@ -79,7 +79,7 @@ void add_sources(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
       prompt << prgrm->src_token->action_props.should << "\n";
     }
     if (prgrm->src_token->action_props.could) {
-      prompt << "These are must, priority 3 sources and optional to be "
+      prompt << "These are could, priority 3 sources and optional to be "
                 "included if possible "
                 "included : \n";
       prompt << prgrm->src_token->action_props.could << "\n";
