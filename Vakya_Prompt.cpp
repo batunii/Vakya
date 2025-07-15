@@ -3,7 +3,7 @@
 #include "Vakya_Lexer.hpp"
 #include "Vakya_Program.hpp"
 #include <cstdlib>
-// #include <emscripten/emscripten.h>
+#include <emscripten/emscripten.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -247,7 +247,7 @@ std::string generate_prompt(std::stringstream &out,
   add_footer(out);
   return out.str();
 }
-/*
+
  extern "C" {
  EMSCRIPTEN_KEEPALIVE
 const char *generate_vakya_prompt(const char *input_code) {
@@ -257,9 +257,9 @@ const char *generate_vakya_prompt(const char *input_code) {
   std::stringstream prompt;
   try {
     ast.start_compiler();
-    std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
-    if (prgrm.has_value()) {
-      vakya_result_s = generate_prompt(prompt, prgrm.value());
+	  std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
+  	  if (prgrm.has_value()) {
+     vakya_result_s = generate_prompt(prompt, prgrm.value());
       return vakya_result_s.c_str();
     } else
       throw vakya_error("No Program object found", -1);
@@ -268,8 +268,8 @@ const char *generate_vakya_prompt(const char *input_code) {
   }
   }
 }
-*/
 
+/*
 int main() {
 
   std::string code, line;
@@ -283,3 +283,4 @@ int main() {
   ast.start_compiler();
   ast.print_programs();
 }
+*/
