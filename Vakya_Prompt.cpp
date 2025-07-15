@@ -190,7 +190,7 @@ void add_formatting(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
 }
 
 void add_conditions(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
-  if (prgrm->src_token) {
+  if (prgrm->cdn_token) {
     prompt << "============================================================\n"
            << "CONDITIONS\n"
            << "------------------------------------------------------------\n";
@@ -253,16 +253,17 @@ std::string generate_prompt(std::stringstream &out,
 const char *generate_vakya_prompt(const char *input_code) {
   Lexer lexer(input_code);
   lexer.make_tokens();
-  AST ast(lexer);
-  std::stringstream prompt;
+  //AST ast(lexer);
+  //std::stringstream prompt;
   try {
-    ast.start_compiler();
-	  std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
-  	  if (prgrm.has_value()) {
-     vakya_result_s = generate_prompt(prompt, prgrm.value());
-      return vakya_result_s.c_str();
-    } else
-      throw vakya_error("No Program object found", -1);
+    //ast.start_compiler();
+	  //std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
+  	  //if (prgrm.has_value()) {
+     //vakya_result_s = generate_prompt(prompt, prgrm.value());
+     // return vakya_result_s.c_str();
+			return "hell";
+  //  } else
+   //   throw vakya_error("No Program object found", -1);
   } catch (vakya_error &ve) {
     return ve.what();
   }

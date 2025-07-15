@@ -241,17 +241,18 @@ void AST::parse_fmt() {
       this->curr_program->fmt_token->meta = this->parse_braces("Meta");
       break;
     }
-		case TokenType::TT_ILL:
+    case TokenType::TT_ILL:
     case TokenType::TT_EOL: {
       if (this->curr_program->fmt_token->type &&
           !this->curr_program->fmt_token->type->action_name.empty())
         return;
       else
-        throw vakya_error("Type of fmt is required to be inline with FMT",
+        throw vakya_error("Type of fmt -> table / para / column etc is "
+                          "required to be inline with FMT",
                           next_token->location);
     }
     default:
-      throw vakya_error("Wrong token at fmt", next_token->location);
+      throw vakya_error("Wrong token for fmt", next_token->location);
     }
     next_token = this->advance_token();
   }
