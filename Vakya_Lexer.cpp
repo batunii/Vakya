@@ -78,7 +78,7 @@ void Lexer::handle_string() {
     --this->next_pos;
 }
 
-std::array<Tokens, 1024> &Lexer::make_tokens() {
+std::array<Tokens, MAX_TOKENS> &Lexer::make_tokens() {
   while (this->advance()) {
     switch (this->curr_char) {
     case '@':
@@ -189,7 +189,7 @@ std::ostream &operator<<(std::ostream &os, Tokens &token) {
   return os;
 }
 
-std::ostream &operator<<(std::ostream &os, std::array<Tokens, 1024> &list) {
+std::ostream &operator<<(std::ostream &os, std::array<Tokens, MAX_TOKENS> &list) {
   if (list.empty())
     os << "The list is empty \n";
   else {

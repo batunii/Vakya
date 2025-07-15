@@ -1,22 +1,112 @@
-<script type="module">
-  import VakyaModule from './Vakya.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vakya DSL Test</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    textarea { width: 100%; height: 120px; }
+    #output { white-space: pre-wrap; background: #f8f8f8; padding: 1em; margin-top: 1em; border: 1px solid #ccc; }
+    button { margin-top: 1em; }
+    .highlight-error {
+      background: #ffe066;
+      color: #c0392b;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Vakya DSL Prompt Tester</h2>
+  <label for="vakya-input">Enter DSL code:</label><br>
+  <textarea id="vakya-input" placeholder="Type your Vakya DSL code here..."></textarea><br>
+  <button id="run-btn">Generate Prompt</button>
+  <button id="copy-btn" type="button">Copy Output</button>
+  <h3>Output:</h3>
+  <div id="output"></div>
 
-  //code = "@do research \n @on best mobile phones \n @cdn{}"
+  <script type="module">
+    import VakyaModule from './Vakya.js';
 
-  fetch("Vakya.wasm")
-  .then(response => response.arrayBuffer())
-  .then(wasmBinary => {
-    VakyaModule({
-      wasmBinary,
-    }).then((Module) => {
-      const result = Module.ccall(
-        'generate_vakya_prompt',
-        'string',
-        ['string'],
-        ["@do research \n @on best mobile phones \n @src(!Reddit, ?Youtube Media)\n @cdn{ ! price>4000} \n @fmt @table(col2) @prop{asc:col1, dsc:col2, grp:col3}"]
+    let ModuleInstance = null;
+
+    // Load the WASM module
+    fetch("Vakya.wasm")
+      .then(response => response.arrayBuffer())
+      .then(wasmBinary => {
+        VakyaModule({ wasmBinary }).then((Module) => {
+          ModuleInstance = Module;
+          document.getElementById('run-btn').disabled = false;
+        });
+      });
+
+    function highlightInputError(input, pos) {
+      if (pos < 0 || pos >= input.length) return input;
+      // Escape HTML special chars for safe display
+      function escapeHtml(s) {
+        return s.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+      }
+      return (
+        escapeHtml(input.slice(0, pos)) +
+        '<span class="highlight-error">' +
+        escapeHtml(input[pos] === '\n' ? '\\n' : input[pos]) +
+        '</span>' +
+        escapeHtml(input.slice(pos + 1))
       );
-      console.log(result);
-    });
-  });
+    }
 
-</script>
+    document.getElementById('run-btn').addEventListener('click', () => {
+      const inputElem = document.getElementById('vakya-input');
+      const input = inputElem.value;
+      const outputDiv = document.getElementById('output');
+      // Remove previous highlights
+      inputElem.classList.remove('error-highlight');
+      outputDiv.textContent = '';
+      outputDiv.innerHTML = '';
+      if (!ModuleInstance) {
+        outputDiv.textContent = "Module not loaded yet.";
+        return;
+      }
+      const inputPtr = ModuleInstance._malloc(input.length + 2);
+      ModuleInstance.stringToUTF8(input + "\n", inputPtr, input.length + 2);
+
+      let resultPtr, resultStr;
+      try {
+        resultPtr = ModuleInstance.ccall(
+          'generate_vakya_prompt',
+          'string',
+          ['number'],
+          [inputPtr]
+        );
+        resultStr = resultPtr;
+      } catch (e) {
+        resultStr = e.message || "Unknown error occurred";
+      }
+      ModuleInstance._free(inputPtr);
+
+      // Check for vakya_error: Exception[pos] : msg
+      const errorMatch = /^Exception\[(\-?\d+)\] ?: ?([\s\S]*)$/.exec(resultStr);
+      if (errorMatch) {
+        const pos = parseInt(errorMatch[1], 10);
+        const msg = errorMatch[2];
+        outputDiv.innerHTML = `<span style="color:#c0392b;font-weight:bold;">${msg}</span>`;
+        // Highlight error character in input if pos >= 0
+        if (pos >= 0) {
+          outputDiv.innerHTML += "<br><br><b>Error at character:</b><br><pre style='background:#fffbe6;border:1px solid #ffe066;padding:0.5em;'>" +
+            highlightInputError(input, pos) +
+            "</pre>";
+        }
+        return;
+      }
+      outputDiv.textContent = resultStr;
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const outputDiv = document.getElementById('output');
+      // Copy only the text content (not HTML markup)
+      navigator.clipboard.writeText(outputDiv.textContent);
+    });
+  </script>
+</body>
+</html>

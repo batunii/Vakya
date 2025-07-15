@@ -248,41 +248,25 @@ std::string generate_prompt(std::stringstream &out,
   return out.str();
 }
 
- extern "C" {
- EMSCRIPTEN_KEEPALIVE
+extern "C" {
+EMSCRIPTEN_KEEPALIVE
 const char *generate_vakya_prompt(char *input_code) {
-	input_code[strlen(input_code)] = '\n';
+  if (strlen(input_code) > MAX_TOKENS)
+    throw vakya_error("Too many tokens for 1 prompt", MAX_TOKENS);
   Lexer lexer(input_code);
   lexer.make_tokens();
   AST ast(lexer);
   std::stringstream prompt;
   try {
     ast.start_compiler();
-	  std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
-  	  if (prgrm.has_value()) {
-     vakya_result_s = generate_prompt(prompt, prgrm.value());
+    std::optional<std::shared_ptr<Program>> prgrm = ast.get_program();
+    if (prgrm.has_value()) {
+      vakya_result_s = generate_prompt(prompt, prgrm.value());
       return vakya_result_s.c_str();
-		//	return input_code;
     } else
       throw vakya_error("No Program object found", -1);
   } catch (vakya_error &ve) {
     return ve.what();
   }
-  }
 }
-
-/*
-int main() {
-
-  std::string code, line;
-  std::cout << "Vakya (enter multiple lines, Ctrl+D to end input):\n";
-  while (std::getline(std::cin, line)) {
-    code += line + "\n"; // Preserve line breaks
-  }
-  Lexer lexer(code);
-  std::cout << lexer.make_tokens() << "\n";
-  AST ast(lexer);
-  ast.start_compiler();
-  ast.print_programs();
 }
-*/
