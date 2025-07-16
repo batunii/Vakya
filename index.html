@@ -409,20 +409,20 @@
         outputDiv.textContent = "Module not loaded yet.";
         return;
       }
-      // Restore original allocation logic: always add a newline and allocate input.length + 2 bytes
+      // Always add a newline and allocate input.length + 2 bytes
       const inputWithNewline = input + "\n";
       const inputPtr = ModuleInstance._malloc(inputWithNewline.length + 1);
       ModuleInstance.stringToUTF8(inputWithNewline, inputPtr, inputWithNewline.length + 1);
 
-      let resultPtr, resultStr;
+      let resultStr;
       try {
-        resultPtr = ModuleInstance.ccall(
+        // Always use ccall for 'string' return type to avoid signature mismatch
+        resultStr = ModuleInstance.ccall(
           'generate_vakya_prompt',
           'string',
           ['number'],
           [inputPtr]
         );
-        resultStr = resultPtr;
       } catch (e) {
         resultStr = e.message || "Unknown error occurred";
       }
