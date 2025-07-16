@@ -6,18 +6,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
-      --primary: #2d6cdf;
-      --secondary: #f8f8f8;
-      --accent: #ffe066;
-      --error: #c0392b;
-      --border-radius: 12px;
-      --shadow: 0 2px 8px rgba(0,0,0,0.07);
+      /* Light Theme (default) */
+      --bg: #f5fdf6;
+      --text: #2f3e2e;
+      --text-secondary: #5a7f5a;
+      --accent: #4caf50;
+      --button-text: #ffffff;
+      --highlight: #e8f5e9; /* Softer mint for focus */
+      --border: #c8e6c9;
+      --close-red: #e57373;
+      --error-bg: #fff0f0;
+      --error-text: #c0392b;
+      --error-highlight: #ffeaea;
+      --shadow: 0 2px 8px rgba(44, 67, 44, 0.07);
+    }
+    [data-theme="dark"] {
+      --bg: #121e15;
+      --text: #e8f5e9;
+      --text-secondary: #a5d6a7;
+      --accent: #66bb6a;
+      --button-text: #ffffff;
+      --highlight: #263a29; /* Softer dark for focus */
+      --border: #2e4733;
+      --close-red: #ef5350;
+      --error-bg: #2e4733;
+      --error-text: #ffb4b4;
+      --error-highlight: #3a1e1e;
+      --shadow: 0 2px 8px rgba(44, 67, 44, 0.18);
     }
     body {
       font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
       margin: 0;
-      background: var(--secondary);
-      color: #222;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.2s, color 0.2s;
     }
     .container {
       display: flex;
@@ -26,10 +48,14 @@
       max-width: 1100px;
       margin: 2em auto;
       background: #fff;
-      border-radius: var(--border-radius);
+      border-radius: 12px;
       box-shadow: var(--shadow);
       padding: 2em;
       overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      transition: background 0.2s, color 0.2s, border 0.2s;
     }
     .left, .right {
       flex: 1 1 0;
@@ -41,110 +67,188 @@
       gap: 1em;
     }
     h2 {
-      color: var(--primary);
+      color: var(--accent);
       margin-top: 0;
     }
     label {
       font-weight: 500;
       margin-bottom: 0.5em;
       display: block;
+      color: var(--text-secondary);
     }
     textarea {
       width: 100%;
       height: 120px;
       font-size: 1em;
       padding: 0.75em;
-      border-radius: var(--border-radius);
-      border: 1px solid #ccc;
+      border-radius: 12px;
+      border: 1px solid var(--border);
       box-sizing: border-box;
       resize: vertical;
-      background: var(--secondary);
-      transition: border-color 0.2s;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
     }
     textarea:focus {
-      border-color: var(--primary);
+      border-color: var(--accent);
       outline: none;
+      background: var(--highlight);
+      color: var(--text);
+    }
+    [data-theme="dark"] textarea:focus {
+      background: #66bb6a;
+      color: #fff;
     }
     #output {
       white-space: pre-wrap;
-      background: var(--secondary);
+      background: var(--bg);
       padding: 1em;
       margin-top: 1em;
-      border: 1px solid #ccc;
-      border-radius: var(--border-radius);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       min-height: 3em;
       font-size: 1em;
       box-sizing: border-box;
       max-width: 100%;
       overflow-x: auto;
       word-break: break-word;
+      color: var(--text);
+      transition: background 0.2s, color 0.2s, border 0.2s;
     }
-    /* Prevent overflow for long words/lines */
     .container {
-      /* ...existing code... */
       overflow: hidden;
     }
     button {
       margin-top: 1em;
-      background: var(--primary);
-      color: #fff;
+      background: var(--accent);
+      color: var(--button-text);
       border: none;
-      border-radius: var(--border-radius);
+      border-radius: 12px;
       padding: 0.7em 1.5em;
       font-size: 1em;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, color 0.2s;
       box-shadow: var(--shadow);
     }
     button:active, button:focus {
-      background: #174ea6;
+      background: var(--highlight);
       outline: none;
+      color: var(--text);
     }
     #copy-btn {
       margin-left: 1em;
-      background: var(--accent);
-      color: #222;
+      background: var(--highlight);
+      color: var(--text);
     }
+    /* Remove #theme-btn styles, use switch only */
     .highlight-error {
-      background: var(--accent);
-      color: var(--error);
+      background: var(--error-highlight);
+      color: var(--error-text);
       font-weight: bold;
       border-radius: 4px;
       padding: 0 2px;
     }
+    .error-message {
+      background: var(--error-bg);
+      color: var(--error-text);
+      padding: 0.5em 1em;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-bottom: 0.5em;
+      display: inline-block;
+    }
     .guide-toggle {
       display: none;
       margin-bottom: 1em;
-      background: var(--primary);
-      color: #fff;
+      background: var(--accent);
+      color: var(--button-text);
       border: none;
-      border-radius: var(--border-radius);
+      border-radius: 12px;
       padding: 0.5em 1em;
       font-size: 1em;
       cursor: pointer;
       box-shadow: var(--shadow);
     }
     .guide {
-      background: #f4f8ff;
-      border-radius: var(--border-radius);
+      background: var(--bg);
+      border-radius: 12px;
       padding: 1.5em;
       font-size: 1em;
       box-shadow: var(--shadow);
-      border: 1px solid #e3eafc;
+      border: 1px solid var(--border);
       margin-bottom: 1em;
       max-height: 70vh;
       overflow-y: auto;
+      color: var(--text-secondary);
+      transition: background 0.2s, color 0.2s, border 0.2s;
     }
     .guide h3 {
       margin-top: 0;
-      color: var(--primary);
+      color: var(--accent);
     }
     .guide code, .guide pre {
-      background: #e3eafc;
+      background: var(--highlight);
       border-radius: 6px;
       padding: 2px 6px;
       font-size: 0.98em;
       font-family: 'Fira Mono', 'Consolas', monospace;
+      color: var(--text);
+    }
+    /* Switch styles */
+    .theme-switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+      vertical-align: middle;
+    }
+    .theme-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .theme-switch .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--accent);
+      transition: background 0.3s;
+      border-radius: 26px;
+    }
+    .theme-switch .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      transition: transform 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .theme-switch input:checked + .slider {
+      background: var(--highlight);
+    }
+    .theme-switch input:checked + .slider:before {
+      transform: translateX(20px);
+      background: #222;
+    }
+    /* Sun/Moon icons for switch */
+    .theme-switch .slider:after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 12px;
+      height: 12px;
+      background: url('data:image/svg+xml;utf8,<svg width="12" height="12" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="6" r="5" fill="%23fff"/></svg>') no-repeat center/cover;
+      opacity: 1;
+      transition: opacity 0.3s;
+    }
+    .theme-switch input:checked + .slider:after {
+      background: url('data:image/svg+xml;utf8,<svg width="12" height="12" xmlns="http://www.w3.org/2000/svg"><path d="M6 1a5 5 0 1 0 5 5A5 5 0 0 1 6 1z" fill="%23fff"/></svg>') no-repeat center/cover;
+      opacity: 1;
     }
     @media (max-width: 900px) {
       .container {
@@ -170,13 +274,14 @@
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         z-index: 100;
-        background: #fff;
+        background: var(--bg);
         max-height: none;
         overflow-y: auto;
         margin: 0;
         border-radius: 0;
         box-shadow: none;
         border: none;
+        color: var(--text-secondary);
       }
       .guide.show {
         display: block;
@@ -184,10 +289,10 @@
       .guide-close {
         display: block;
         margin-bottom: 1em;
-        background: var(--primary);
+        background: var(--close-red);
         color: #fff;
         border: none;
-        border-radius: var(--border-radius);
+        border-radius: 12px;
         padding: 0.5em 1em;
         font-size: 1em;
         cursor: pointer;
@@ -199,7 +304,15 @@
 <body>
   <div class="container">
     <div class="left">
-      <h2>Vakya DSL Prompt Tester</h2>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin-bottom:0;">Vakya DSL Prompt Tester</h2>
+        <div id="theme-switch-container" style="margin-left:1em;">
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-switch-input" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
       <label for="vakya-input">Enter DSL code:</label>
       <textarea id="vakya-input" placeholder="Type your Vakya DSL code here..."></textarea>
       <div>
@@ -231,24 +344,25 @@
             <code>@cdn { ! price > Rs. 4000, bazeless glass<br>
             camera !&lt;= 40 MP }</code> <br>
             Multiple operators and multiline conditions are allowed.
+            Conditions without operators are also allowed.
           </li>
           <li><b>@fmt #&lt;type&gt;(&lt;priority&gt;&lt;attr&gt;:&lt;alias/type&gt;)</b> <br>
             <code>@fmt #table(!name, price:dollars, ?camera)</code> <br>
             Supported types: <b>table, paragraphs, mind maps, knowledge web</b> (others allowed).
           </li>
           <li><b>@prop{&lt;priority&gt;&lt;key&gt;:&lt;value&gt;}</b> <br>
-            <code>@prop{asc:price, dsc:camera, grp:company, limit:5}</code> <br>
+            <code>@prop{!asc:price, dsc:camera, ?grp:company, ! limit:5}</code> <br>
             <b>asc</b>: ascending, <b>dsc</b>: descending, <b>grp</b>: grouping, <b>limit</b>: result limit.
           </li>
           <li><b>@meta{&lt;priority&gt;&lt;key&gt;:&lt;value&gt;}</b> <br>
-            <code>@meta{tone:mellow}</code> <br>
+            <code>@meta{? tone:mellow}</code> <br>
             Any extra metadata for the results.
           </li>
+          <li>Both <code>@meta</code> and <code>@prop</code> can appear individually but they work best when <code>@fmt</code> is used. as well</li>
           <li><b>@strict</b> <br>
             If you want absolutely nothing but the format you mentioned, use <code>@strict</code>.
           </li>
         </ul>
-        <p>Other tags can be used, but these are supported by the compiler.</p>
       </div>
     </div>
   </div>
@@ -317,9 +431,9 @@
       if (errorMatch) {
         const pos = parseInt(errorMatch[1], 10);
         const msg = errorMatch[2];
-        outputDiv.innerHTML = `<span style="color:#c0392b;font-weight:bold;">${msg}</span>`;
+        outputDiv.innerHTML = `<span class="error-message">${msg}</span>`;
         if (pos >= 0) {
-          outputDiv.innerHTML += "<br><br><b>Error at character:</b><br><pre style='background:#fffbe6;border:1px solid #ffe066;padding:0.5em;'>" +
+          outputDiv.innerHTML += "<br><br><b>Error at character:</b><br><pre style='background:var(--error-highlight);border:1px solid var(--close-red);padding:0.5em;'>" +
             highlightInputError(input, pos) +
             "</pre>";
         }
@@ -331,6 +445,25 @@
     document.getElementById('copy-btn').addEventListener('click', () => {
       const outputDiv = document.getElementById('output');
       navigator.clipboard.writeText(outputDiv.textContent);
+    });
+
+    // Theme switcher with animation
+    const themeSwitchInput = document.getElementById('theme-switch-input');
+    function setTheme(dark) {
+      const html = document.documentElement;
+      if (dark) {
+        html.setAttribute('data-theme', 'dark');
+      } else {
+        html.setAttribute('data-theme', 'light');
+      }
+    }
+    // Set initial theme based on system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      themeSwitchInput.checked = true;
+      setTheme(true);
+    }
+    themeSwitchInput.addEventListener('change', () => {
+      setTheme(themeSwitchInput.checked);
     });
 
     // Guide toggle for mobile
@@ -353,6 +486,7 @@
         closeBtn.textContent = "Close Guide";
         closeBtn.className = "guide-close";
         closeBtn.id = "guide-close-btn";
+        closeBtn.style.backgroundColor = "var(--close-red)";
         closeBtn.onclick = () => {
           guideVisible = false;
           updateGuideVisibility();
