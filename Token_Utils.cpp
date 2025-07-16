@@ -1,13 +1,33 @@
 #include "Token_Utils.hpp"
-#include<string>
-#include<unordered_map>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
-    {"do", TokenType::TT_DO},     {"on", TokenType::TT_ON},
-    {"fmt", TokenType::TT_FMT},   {"cdn", TokenType::TT_CDN},
-    {"table", TokenType::TT_TBL}, {"asc", TokenType::TT_ASC},
-    {"dsc", TokenType::TT_DSC},   {"grp", TokenType::TT_GRP}};
+    {"do", TokenType::TT_DO},        {"on", TokenType::TT_ON},
+    {"fmt", TokenType::TT_FMT},      {"cdn", TokenType::TT_CDN},
+    {"table", TokenType::TT_TBL},    {"asc", TokenType::TT_ASC},
+    {"dsc", TokenType::TT_DSC},      {"grp", TokenType::TT_GRP},
+    {"src", TokenType::TT_SRC},      {"prop", TokenType::TT_PRP},
+    {"para", TokenType::TT_PAR},     {"meta", TokenType::TT_META},
+    {"strict", TokenType::TT_STRICT}};
 
+const std::unordered_map<TokenType, std::string> operators_map = {
+    {TokenType::TT_EQ, " equals to "},
+    {TokenType::TT_LT, " less than "},
+    {TokenType::TT_GT, " greater than "},
+    {TokenType::TT_EX, " not "}};
+const std::unordered_map<std::string, std::string> isto_operators = {
+    {"meta", "is"}, {"asc", "on"}, {"dsc", "on"}, {"grp", "by"}};
+const std::unordered_map<std::string, std::string> macro_map = {
+    {"asc", "ascending order"},
+    {"dsc", "descending order"},
+    {"grp", "group"},
+    {"retail", "amazon, flipkart, target"},
+    {"social", "facebook, Twitter/X, bluesky, reddit, quora, mastodon"}};
+
+const std::unordered_set<TokenType> user_values = {
+    TokenType::TT_ATTR, TokenType::TT_USR, TokenType::TT_STR};
 
 std::string toString(TokenType type) {
   switch (type) {
@@ -40,6 +60,8 @@ std::string toString(TokenType type) {
     return "TT_CL";
   case TokenType::TT_SC:
     return "TT_SC";
+  case TokenType::TT_CM:
+    return "TT_CM";
   case TokenType::TT_SB:
     return "TT_SB";
   case TokenType::TT_EB:
@@ -50,6 +72,8 @@ std::string toString(TokenType type) {
     return "TT_EOL";
   case TokenType::TT_NXT:
     return "TT_NXT";
+  case TokenType::TT_EOP:
+    return "TT_EOP";
 
   // Keywords
   case TokenType::TT_DO:
@@ -72,13 +96,26 @@ std::string toString(TokenType type) {
     return "TT_ATTR";
   case TokenType::TT_STR:
     return "TT_STR";
-
+  case TokenType::TT_USR:
+    return "TT_USR";
+  case TokenType::TT_PAR:
+    return "TT_PAR";
+  case TokenType::TT_BL:
+    return "TT_BL";
+  case TokenType::TT_LST:
+    return "TT_LST";
+  case TokenType::TT_SRC:
+    return "TT_SRC";
+  case TokenType::TT_PRP:
+    return "TT_PRP";
+  case TokenType::TT_META:
+    return "TT_META";
+  case TokenType::TT_STRICT:
+    return "TT_STRICT";
   default:
     return "ILLEGAL";
   }
 }
-
-
 
 char symbol(TokenType type) {
   switch (type) {
@@ -116,6 +153,8 @@ char symbol(TokenType type) {
     return '}';
   case TokenType::TT_EQ:
     return '=';
+  case TokenType::TT_CM:
+    return ',';
   case TokenType::TT_EOL:
     return '\n';
   default:
@@ -123,10 +162,7 @@ char symbol(TokenType type) {
   }
 }
 
-
 // Overload ostream << for TokenType
 std::ostream &operator<<(std::ostream &os, TokenType type) {
   return os << toString(type);
 }
-
-

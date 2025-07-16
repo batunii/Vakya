@@ -1,2 +1,9 @@
-./Vakya
-.o
+Vakya
+/*.o
+./my_files
+/*.py
+.vscode/
+*_DBG
+*_dbg
+*patch
+
