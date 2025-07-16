@@ -13,10 +13,10 @@ private:
   std::optional<std::shared_ptr<Program>> get_curr_program();
   std::optional<Tokens> advance_token();
   std::optional<Tokens> peek_token();
-  std::unique_ptr<ops<ls_props<std::string>>> parse_parenthesis(const std::string &action_name);
-  void parse_condition(condition &curr_condition, const Tokens &curr_token,
-                       std::string &token_type);
-  std::unique_ptr<ops<ls_props<condition>>> parse_braces(std::string &&action_name);
+  std::unique_ptr<ops<ls_props<std::string>>>
+  parse_parenthesis(const std::string &);
+  std::unique_ptr<ops<ls_props<condition>>> parse_braces(std::string &&);
+  void parse_condition(condition &, const Tokens &, std::string &);
   void parse_src();
   void parse_fmt();
   void parse_cdn();
@@ -24,7 +24,7 @@ private:
   void parse_on();
 
 public:
-  AST(Lexer &lexter);
+  AST(Lexer &);
   std::optional<std::shared_ptr<Program>> get_program();
   void print_programs();
   void start_compiler();
