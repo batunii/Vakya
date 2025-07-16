@@ -12,7 +12,7 @@
       --text-secondary: #5a7f5a;
       --accent: #4caf50;
       --button-text: #ffffff;
-      --highlight: #e8f5e9; /* Softer mint for focus */
+      --highlight: #e8f5e9;
       --border: #c8e6c9;
       --close-red: #e57373;
       --error-bg: #fff0f0;
@@ -26,7 +26,7 @@
       --text-secondary: #a5d6a7;
       --accent: #66bb6a;
       --button-text: #ffffff;
-      --highlight: #263a29; /* Softer dark for focus */
+      --highlight: #1a2a1a; /* Much darker for focus, readable text */
       --border: #2e4733;
       --close-red: #ef5350;
       --error-bg: #2e4733;
@@ -96,8 +96,8 @@
       color: var(--text);
     }
     [data-theme="dark"] textarea:focus {
-      background: #66bb6a;
-      color: #fff;
+      background: #1a2a1a;
+      color: #e8f5e9;
     }
     #output {
       white-space: pre-wrap;
@@ -400,7 +400,7 @@
 
     document.getElementById('run-btn').addEventListener('click', () => {
       const inputElem = document.getElementById('vakya-input');
-      const input = inputElem.value;
+      let input = inputElem.value;
       const outputDiv = document.getElementById('output');
       inputElem.classList.remove('error-highlight');
       outputDiv.textContent = '';
@@ -409,8 +409,10 @@
         outputDiv.textContent = "Module not loaded yet.";
         return;
       }
-      const inputPtr = ModuleInstance._malloc(input.length + 2);
-      ModuleInstance.stringToUTF8(input + "\n", inputPtr, input.length + 2);
+      // Only add a newline if not already present at the end
+      if (!input.endsWith('\n')) input += '\n';
+      const inputPtr = ModuleInstance._malloc(input.length + 1);
+      ModuleInstance.stringToUTF8(input, inputPtr, input.length + 1);
 
       let resultPtr, resultStr;
       try {
