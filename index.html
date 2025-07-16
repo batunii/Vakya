@@ -358,7 +358,7 @@
             <code>@meta{? tone:mellow}</code> <br>
             Any extra metadata for the results.
           </li>
-          <li>Both <code>@meta</code> and <code>@prop</code> can appear individually but they work best when <code>@fmt</code> is used. as well</li>
+          <li>Both <code>@meta</code> and <code>@prop</code> can appear individually but they should be used only after <code>@fmt</code> is used. as well</li>
           <li><b>@strict</b> <br>
             If you want absolutely nothing but the format you mentioned, use <code>@strict</code>.
           </li>
@@ -400,7 +400,7 @@
 
     document.getElementById('run-btn').addEventListener('click', () => {
       const inputElem = document.getElementById('vakya-input');
-      let input = inputElem.value;
+      const input = inputElem.value;
       const outputDiv = document.getElementById('output');
       inputElem.classList.remove('error-highlight');
       outputDiv.textContent = '';
@@ -409,10 +409,10 @@
         outputDiv.textContent = "Module not loaded yet.";
         return;
       }
-      // Only add a newline if not already present at the end
-      if (!input.endsWith('\n')) input += '\n';
-      const inputPtr = ModuleInstance._malloc(input.length + 1);
-      ModuleInstance.stringToUTF8(input, inputPtr, input.length + 1);
+      // Restore original allocation logic: always add a newline and allocate input.length + 2 bytes
+      const inputWithNewline = input + "\n";
+      const inputPtr = ModuleInstance._malloc(inputWithNewline.length + 1);
+      ModuleInstance.stringToUTF8(inputWithNewline, inputPtr, inputWithNewline.length + 1);
 
       let resultPtr, resultStr;
       try {
