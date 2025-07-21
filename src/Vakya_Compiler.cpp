@@ -3,6 +3,9 @@
 #include "Vakya_Error.hpp"
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <vector>
+#define LOG(a) std::cout << a << "\n"
 
 std::optional<std::shared_ptr<Program>> AST::get_curr_program() {
   if (size_t program_size = this->program_steps.size())
@@ -59,6 +62,14 @@ AST::parse_parenthesis(const std::string &action_name) {
       curr_list = &props->action_props.should;
       break;
     }
+    case TokenType::TT_USR: {
+      if (auto it = macro_map.find(next_token->t_val);
+          action_name == "source" && (it != macro_map.end()))
+        curr_value = it->second;
+      else
+        curr_value.append(" #" + next_token->t_val);
+      break;
+    }
     case TokenType::TT_STR:
     case TokenType::TT_ATTR: {
       curr_value.append(" " + next_token->t_val);
@@ -92,9 +103,13 @@ AST::parse_parenthesis(const std::string &action_name) {
 void AST::parse_condition(condition &curr_condition, const Tokens &curr_token,
                           std::string &token_type) {
   if (curr_condition.oper.empty() && token_type == "value_key") {
+    if (curr_token.t_type == TokenType::TT_USR &&
+        macro_map.find(curr_token.t_val) != macro_map.end()) {
+      curr_condition.key = macro_map.find(curr_token.t_val)->second;
+      return;
+    }
     curr_condition.key.append(" " + curr_token.t_val);
   } else if (curr_condition.oper.empty() && token_type == "isto") {
-    curr_condition.key.erase(curr_condition.key.find(" "), 1);
     auto it_value = isto_operators.find(curr_condition.key);
     curr_condition.oper =
         it_value != isto_operators.end() ? it_value->second : " is ";
@@ -230,6 +245,7 @@ void AST::parse_fmt() {
           this->parse_parenthesis(next_token->t_val);
       break;
     }
+    case TokenType::TT_NXT:
     case TokenType::TT_PRP: {
       this->curr_program->fmt_token->order =
           this->parse_braces("Order Properties");
@@ -288,16 +304,22 @@ void AST::parse_do() {
 }
 
 void AST::parse_on() {
-  auto new_on_token = std::make_unique<ops<std::string>>();
+  auto new_on_token =
+      std::make_unique<ops<std::optional<ls_props<condition>>>>();
   curr_program->on_token = std::move(new_on_token);
-  curr_program->on_token->action_name = "on";
   auto new_token = this->advance_token();
   while (new_token && new_token->t_type != TokenType::TT_EOL) {
     switch (new_token->t_type) {
     case TokenType::TT_STR:
     case TokenType::TT_ATTR:
-      curr_program->on_token->action_props.append(" " + new_token->t_val);
+      curr_program->on_token->action_name.append(" " + new_token->t_val);
       break;
+    case TokenType::TT_NXT:
+    case TokenType::TT_CTX: {
+      this->curr_program->on_token->action_props =
+          parse_braces("context")->action_props;
+      break;
+    }
     default:
       throw vakya_error("Token expect after on", new_token->location);
     }
@@ -318,10 +340,13 @@ void AST::start_compiler() {
   while (curr_token && !encountered_ill) {
     switch (curr_token->t_type) {
     case TokenType::TT_DO: {
+      LOG("Parsing Do");
       parse_do();
+      LOG("Parsed Do");
       break;
     }
     case TokenType::TT_ON: {
+      LOG("Parsing on");
       parse_on();
       break;
     }
@@ -334,18 +359,10 @@ void AST::start_compiler() {
       parse_fmt();
       break;
     }
-    case TokenType::TT_TBL:
-    case TokenType::TT_BL:
-    case TokenType::TT_PAR:
-    case TokenType::TT_USR: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->type =
-            parse_parenthesis(curr_token->t_val);
-      break;
-    }
     case TokenType::TT_PRP: {
       if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->order = this->parse_braces("Order Properties");
+        this->curr_program->fmt_token->order =
+            this->parse_braces("Order Properties");
       break;
     }
     case TokenType::TT_META: {
@@ -388,7 +405,7 @@ std::optional<std::shared_ptr<Program>> AST::get_program() {
 
 void AST::print_programs() {
   for (const auto &prgrm : this->program_steps) {
-		std::cout<<"Print Called\n";
+    std::cout << "Print Called\n";
     std::cout << *prgrm << "\n";
   }
 }

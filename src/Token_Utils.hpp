@@ -49,6 +49,7 @@ enum class TokenType {
   TT_SRC,
   TT_PRP,
   TT_META,
+  TT_CTX,
   TT_STRICT
 };
 
