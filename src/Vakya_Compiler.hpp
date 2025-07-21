@@ -16,7 +16,7 @@ private:
   std::unique_ptr<ops<ls_props<std::string>>>
   parse_parenthesis(const std::string &);
   std::unique_ptr<ops<ls_props<condition>>> parse_braces(std::string &&);
-  void update_given_tokens(std::unique_ptr<ops<ls_props<condition>>> src,
+  void update_given_tokens(const ops<ls_props<condition>>& src,
                            ls_props<condition> &dest);
   void parse_condition(condition &, const Tokens &, std::string &);
   void parse_src();
