@@ -4,7 +4,7 @@
 #include "Vakya_Program.hpp"
 #include <cstring>
 #include <emscripten/emscripten.h>
-// #include <iostream>
+//#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -59,7 +59,25 @@ void do_on(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
          << "The user wants you to: " << prgrm->do_token->action_props + "\n";
   if (prgrm->on_token)
     prompt << "On the topic and Target entity: " +
-                  prgrm->on_token->action_props + "\n";
+                  prgrm->on_token->action_name + "\n";
+  if (prgrm->on_token && prgrm->on_token->action_props.has_value()) {
+    prompt
+        << "User has provided some extra context for you to curate your "
+           "answer.\n"
+        << "Make sure you use this context to form the answer to the query.\n"
+        << "Context : \n";
+    if (prgrm->on_token->action_props->must)
+      prompt << "These are must to include: \n"
+             << prgrm->on_token->action_props->must << "\n";
+
+    if (prgrm->on_token->action_props->should)
+      prompt << "These are should context, nice to include : \n"
+             << prgrm->on_token->action_props->should << "\n";
+
+    if (prgrm->on_token->action_props->could)
+      prompt << "These are could context, optional to include : \n"
+             << prgrm->on_token->action_props->could << "\n";
+  }
 }
 
 void add_sources(std::stringstream &prompt, std::shared_ptr<Program> prgrm) {
@@ -277,6 +295,7 @@ const char *generate_vakya_prompt(char *input_code) {
 }
 
 /*
+
 int main() {
   std::string code, line;
   std::cout << "Vakya (enter multiple lines, Ctrl+D to end input):\n";
@@ -284,11 +303,12 @@ int main() {
     code += line + "\n";
   }
   Lexer lexer(code);
-  lexer.make_tokens();
+  std::cout << lexer.make_tokens() << "\n";
   AST ast(lexer);
   ast.start_compiler();
-  ast.print_programs();
+  /// ast.print_programs();
   std::stringstream prompt;
+ //  ast.print_programs();
   std::cout << generate_prompt(prompt, ast.get_program().value());
 }
 */

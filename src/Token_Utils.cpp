@@ -4,13 +4,13 @@
 #include <unordered_set>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
-    {"do", TokenType::TT_DO},        {"on", TokenType::TT_ON},
-    {"fmt", TokenType::TT_FMT},      {"cdn", TokenType::TT_CDN},
-    {"table", TokenType::TT_TBL},    {"asc", TokenType::TT_ASC},
-    {"dsc", TokenType::TT_DSC},      {"grp", TokenType::TT_GRP},
-    {"src", TokenType::TT_SRC},      {"prop", TokenType::TT_PRP},
-    {"para", TokenType::TT_PAR},     {"meta", TokenType::TT_META},
-    {"strict", TokenType::TT_STRICT}};
+    {"do", TokenType::TT_DO},         {"on", TokenType::TT_ON},
+    {"fmt", TokenType::TT_FMT},       {"cdn", TokenType::TT_CDN},
+    {"table", TokenType::TT_TBL},     {"asc", TokenType::TT_ASC},
+    {"dsc", TokenType::TT_DSC},       {"grp", TokenType::TT_GRP},
+    {"src", TokenType::TT_SRC},       {"prop", TokenType::TT_PRP},
+    {"para", TokenType::TT_PAR},      {"meta", TokenType::TT_META},
+    {"strict", TokenType::TT_STRICT}, {"given", TokenType::TT_CTX}};
 
 const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_EQ, " equals to "},
@@ -18,13 +18,15 @@ const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_GT, " greater than "},
     {TokenType::TT_EX, " not "}};
 const std::unordered_map<std::string, std::string> isto_operators = {
-    {"meta", "is"}, {"asc", "on"}, {"dsc", "on"}, {"grp", "by"}};
+    {"meta", "is"}, {"ascending order", "on"}, {"descending order", "on"}, {"group", "by"}};
 const std::unordered_map<std::string, std::string> macro_map = {
     {"asc", "ascending order"},
     {"dsc", "descending order"},
     {"grp", "group"},
     {"retail", "amazon, flipkart, target"},
-    {"social", "facebook, Twitter/X, bluesky, reddit, quora, mastodon"}};
+    {"social", "facebook, Twitter/X, bluesky, reddit, quora, mastodon"},
+    {"news", "bbc, cnn, hindu, aljazeera"},
+    {"blogs", "medium"}};
 
 const std::unordered_set<TokenType> user_values = {
     TokenType::TT_ATTR, TokenType::TT_USR, TokenType::TT_STR};
@@ -110,6 +112,8 @@ std::string toString(TokenType type) {
     return "TT_PRP";
   case TokenType::TT_META:
     return "TT_META";
+  case TokenType::TT_CTX:
+    return "TT_CTX";
   case TokenType::TT_STRICT:
     return "TT_STRICT";
   default:

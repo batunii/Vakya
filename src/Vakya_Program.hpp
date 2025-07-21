@@ -2,12 +2,14 @@
 #define PROGRAM_H
 
 #include "Token_Utils.hpp"
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <memory>
+#include <iostream>
+#define LOG(a) std::cout << a << "\n"
 
 // ops<T>: action_name and its associated properties
 template <typename T> class ops {
@@ -44,7 +46,7 @@ public:
 class Program {
 public:
   std::unique_ptr<ops<std::string>> do_token;
-  std::unique_ptr<ops<std::string>> on_token;
+  std::unique_ptr<ops<std::optional<ls_props<condition>>>> on_token;
   std::unique_ptr<ops<ls_props<std::string>>> src_token;
   std::unique_ptr<fmt_class> fmt_token;
   std::unique_ptr<ops<ls_props<condition>>> cdn_token;
@@ -75,10 +77,7 @@ operator<<(std::ostream &os,
            const std::optional<std::vector<condition>> &list) {
   if (list.has_value()) {
     for (const auto &item : list.value()) {
-      std::string key = macro_map.find(item.key) != macro_map.end()
-                            ? macro_map.at(item.key)
-                            : item.key;
-      os << "\n- " << key + " " << item.oper + " " << item.value;
+      os << "\n- " << item.key + " " << item.oper + " " << item.value;
     }
   }
   return os;
@@ -123,6 +122,15 @@ template <typename T>
 std::ostream &operator<<(std::ostream &os, const ops<T> &op) {
   os << "Action Name: " << op.action_name << "\n";
   os << "Action Props:\n" << op.action_props;
+  return os;
+}
+
+inline std::ostream &
+operator<<(std::ostream &os,
+           const ops<std::optional<ls_props<condition>>> &op) {
+  os << "Action Name: " << op.action_name << "\n";
+  if (op.action_props && op.action_props.has_value())
+    os << "Action Props:\n" << op.action_props.value();
   return os;
 }
 
