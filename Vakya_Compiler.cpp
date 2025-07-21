@@ -1,16 +1,21 @@
 #include "Vakya_Compiler.hpp"
+#include "Token_Utils.hpp"
 #include "Vakya_Error.hpp"
+#include "Vakya_Program.hpp"
 #include <iostream>
+#include <memory>
+#include <optional>
+#include <vector>
 
-std::optional<Program *> AST::get_curr_program() {
+std::optional<std::shared_ptr<Program>> AST::get_curr_program() {
   if (size_t program_size = this->program_steps.size())
     return this->program_steps[program_size - 1];
   return std::nullopt;
 }
 
 std::optional<Tokens> AST::advance_token() {
-  if (curr_token < lexer.t_list.size()) {
-    ++next_token;
+  if (this->curr_token < lexer.t_list.size()) {
+    ++this->next_token;
     return lexer.t_list[this->curr_token++];
   } else
     return std::nullopt;
@@ -21,12 +26,13 @@ std::optional<Tokens> AST::peek_token() {
   --this->next_token;
   return next_token;
 }
-ops<ls_props<std::string>> *
+
+std::unique_ptr<ops<ls_props<std::string>>>
 AST::parse_parenthesis(const std::string &action_name) {
   if (auto next_token = this->advance_token();
       !(next_token.has_value() && next_token->t_type == TokenType::TT_LP))
     throw vakya_error("Wrong parenthesis syntax", next_token->location);
-  ops<ls_props<std::string>> *props = new ops<ls_props<std::string>>();
+  auto props = std::make_unique<ops<ls_props<std::string>>>();
   props->action_name = action_name;
   std::optional<std::vector<std::string>> *curr_list =
       &props->action_props.should;
@@ -56,11 +62,17 @@ AST::parse_parenthesis(const std::string &action_name) {
       curr_list = &props->action_props.should;
       break;
     }
+    case TokenType::TT_USR: {
+      if (auto it = macro_map.find(next_token->t_val);
+          action_name == "source" && (it != macro_map.end()))
+        curr_value = it->second;
+      else
+        curr_value.append(" #" + next_token->t_val);
+      break;
+    }
     case TokenType::TT_STR:
     case TokenType::TT_ATTR: {
       curr_value.append(" " + next_token->t_val);
-      // ensure_list_ready().end()->append(next_token->t_val);
-      // ensure_list_ready().emplace_back(next_token->t_val);
       break;
     }
     case TokenType::TT_CL: {
@@ -73,7 +85,6 @@ AST::parse_parenthesis(const std::string &action_name) {
         throw vakya_error("Error in parsing parenthesis, with colon",
                           new_token->location);
       }
-
       break;
     }
     default:
@@ -92,9 +103,13 @@ AST::parse_parenthesis(const std::string &action_name) {
 void AST::parse_condition(condition &curr_condition, const Tokens &curr_token,
                           std::string &token_type) {
   if (curr_condition.oper.empty() && token_type == "value_key") {
+    if (curr_token.t_type == TokenType::TT_USR &&
+        macro_map.find(curr_token.t_val) != macro_map.end()) {
+      curr_condition.key = macro_map.find(curr_token.t_val)->second;
+      return;
+    }
     curr_condition.key.append(" " + curr_token.t_val);
   } else if (curr_condition.oper.empty() && token_type == "isto") {
-    curr_condition.key.erase(curr_condition.key.find(" "), 1);
     auto it_value = isto_operators.find(curr_condition.key);
     curr_condition.oper =
         it_value != isto_operators.end() ? it_value->second : " is ";
@@ -109,12 +124,13 @@ void AST::parse_condition(condition &curr_condition, const Tokens &curr_token,
   }
 }
 
-ops<ls_props<condition>> *AST::parse_braces(std::string &&action_name) {
+std::unique_ptr<ops<ls_props<condition>>>
+AST::parse_braces(std::string &&action_name) {
   if (auto new_token = this->advance_token();
       !(new_token.has_value() && new_token->t_type == TokenType::TT_SB))
     throw vakya_error("Wrong syntax for Condition / key Value pair",
                       new_token->location);
-  ops<ls_props<condition>> *cdn_props = new ops<ls_props<condition>>();
+  auto cdn_props = std::make_unique<ops<ls_props<condition>>>();
   cdn_props->action_name = action_name;
   std::optional<std::vector<condition>> *curr_list =
       &cdn_props->action_props.should;
@@ -202,6 +218,29 @@ ops<ls_props<condition>> *AST::parse_braces(std::string &&action_name) {
 
   return cdn_props;
 }
+
+void AST::update_given_tokens(const ops<ls_props<condition>> &src,
+                              ls_props<condition> &dest) {
+  auto ensure_list = [](std::optional<std::vector<condition>> &vec)
+      -> std::optional<std::vector<condition>> & {
+    if (!vec.has_value())
+      vec.emplace();
+    return vec;
+  };
+
+  auto update_list =
+      [&ensure_list](const std::optional<std::vector<condition>> &src_vec,
+                     std::optional<std::vector<condition>> &dest_vec) -> void {
+    if (src_vec.has_value()) {
+      for (const condition &cond : *src_vec)
+        ensure_list(dest_vec)->push_back(cond);
+    }
+  };
+  update_list(src.action_props.must, dest.must);
+  update_list(src.action_props.should, dest.should);
+  update_list(src.action_props.could, dest.could);
+}
+
 void AST::parse_src() {
   if (get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -210,45 +249,54 @@ void AST::parse_src() {
     throw vakya_error("No current Program", 0);
   }
 }
+
 void AST::parse_fmt() {
   if (this->get_curr_program().has_value())
     this->curr_program = this->get_curr_program().value();
   else {
     throw vakya_error("No current program found for fmt", 0);
   }
-  fmt_class *curr_fmt = new fmt_class();
-  this->curr_program->fmt_token = curr_fmt;
   auto next_token = this->advance_token();
-  while (next_token && next_token->t_type != TokenType::TT_EOL) {
+  while (next_token) {
     switch (next_token->t_type) {
-    case TokenType::TT_TBL:
-    case TokenType::TT_BL:
-    case TokenType::TT_PAR:
     case TokenType::TT_USR: {
-      curr_fmt->type = parse_parenthesis(next_token->t_val);
+      this->curr_program->fmt_token->type =
+          this->parse_parenthesis(next_token->t_val);
       break;
     }
-    case TokenType::TT_PRP: {
-      curr_fmt->order = parse_braces("Order Properties");
+    case TokenType::TT_NXT:
+    case TokenType::TT_CTX: {
+      if (!this->curr_program->fmt_token->order)
+        this->curr_program->fmt_token->order =
+            std::make_unique<ops<ls_props<condition>>>();
+      [&] {
+        auto parsed_tokens = this->parse_braces("Order Properties");
+        update_given_tokens(*parsed_tokens,
+                            this->curr_program->fmt_token->order->action_props);
+      }();
       break;
     }
     case TokenType::TT_META: {
-      curr_fmt->meta = parse_braces("Meta");
+      this->curr_program->fmt_token->meta = this->parse_braces("Meta");
       break;
     }
+    case TokenType::TT_ILL:
     case TokenType::TT_EOL: {
-      if (!curr_fmt->type->action_name.empty())
+      if (this->curr_program->fmt_token->type &&
+          !this->curr_program->fmt_token->type->action_name.empty())
         return;
       else
-        throw vakya_error("Type of fmt is required to be inline with FMT",
+        throw vakya_error("Type of fmt -> table / para / column etc is "
+                          "required to be inline with FMT",
                           next_token->location);
     }
     default:
-      throw vakya_error("Wrong token at fmt", next_token->location);
+      throw vakya_error("Wrong token for fmt", next_token->location);
     }
     next_token = this->advance_token();
   }
 }
+
 void AST::parse_cdn() {
   if (this->get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -259,9 +307,9 @@ void AST::parse_cdn() {
 }
 
 void AST::parse_do() {
-  this->curr_program = new Program();
-  ops<std::string> *new_do_token = new ops<std::string>();
-  curr_program->do_token = new_do_token;
+  this->curr_program = std::make_shared<Program>();
+  auto new_do_token = std::make_unique<ops<std::string>>();
+  curr_program->do_token = std::move(new_do_token);
   curr_program->do_token->action_name = "do";
   auto new_token = this->advance_token();
   while (new_token && new_token->t_type != TokenType::TT_EOL) {
@@ -281,28 +329,45 @@ void AST::parse_do() {
 }
 
 void AST::parse_on() {
-
-  ops<std::string> *new_on_token = new ops<std::string>();
-  curr_program->on_token = new_on_token;
-  curr_program->on_token->action_name = "on";
+  auto new_on_token =
+      std::make_unique<ops<std::optional<ls_props<condition>>>>();
+  curr_program->on_token = std::move(new_on_token);
   auto new_token = this->advance_token();
   while (new_token && new_token->t_type != TokenType::TT_EOL) {
     switch (new_token->t_type) {
     case TokenType::TT_STR:
     case TokenType::TT_ATTR:
-      curr_program->on_token->action_props.append(" " + new_token->t_val);
+      curr_program->on_token->action_name.append(" " + new_token->t_val);
       break;
+    case TokenType::TT_NXT:
+    case TokenType::TT_CTX: {
+      if (!this->curr_program->on_token->action_props)
+        this->curr_program->on_token->action_props.emplace();
+      [&] {
+        auto parsed_token = this->parse_braces("context");
+        update_given_tokens(*parsed_token,
+                            this->curr_program->on_token->action_props.value());
+      }();
+      break;
+    }
     default:
       throw vakya_error("Token expect after on", new_token->location);
     }
-
     new_token = this->advance_token();
   }
 }
 
 AST::AST(Lexer &lexer_) : lexer(lexer_) {}
+
 void AST::start_compiler() {
-  while (auto curr_token = this->advance_token()) {
+  bool encountered_ill = false;
+  auto curr_token = this->advance_token();
+  auto make_fmt = [this]() -> void {
+    if (!this->curr_program->fmt_token) {
+      this->curr_program->fmt_token = std::make_unique<fmt_class>();
+    }
+  };
+  while (curr_token && !encountered_ill) {
     switch (curr_token->t_type) {
     case TokenType::TT_DO: {
       parse_do();
@@ -317,26 +382,13 @@ void AST::start_compiler() {
       break;
     }
     case TokenType::TT_FMT: {
+      make_fmt();
       parse_fmt();
       break;
     }
-    case TokenType::TT_TBL:
-    case TokenType::TT_BL:
-    case TokenType::TT_PAR:
-    case TokenType::TT_USR: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->type =
-            parse_parenthesis(curr_token->t_val);
-      break;
-    }
-    case TokenType::TT_PRP: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->order = parse_braces("Order Properties");
-      break;
-    }
     case TokenType::TT_META: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->meta = parse_braces("Meta");
+      make_fmt();
+      this->curr_program->fmt_token->meta = this->parse_braces("Meta");
       break;
     }
     case TokenType::TT_CDN: {
@@ -353,21 +405,28 @@ void AST::start_compiler() {
     case TokenType::TT_EOL: {
       break;
     }
+    case TokenType::TT_ILL: {
+      encountered_ill = true;
+      break;
+    }
     default: {
       throw vakya_error("Unexpected token at root level", curr_token->location);
       break;
     }
     }
+    curr_token = this->advance_token();
   }
 }
-std::optional<Program *> AST::get_program() {
+
+std::optional<std::shared_ptr<Program>> AST::get_program() {
   if (this->curr_program)
     return this->curr_program;
   return std::nullopt;
 }
+
 void AST::print_programs() {
   for (const auto &prgrm : this->program_steps) {
+    std::cout << "Print Called\n";
     std::cout << *prgrm << "\n";
   }
 }
-

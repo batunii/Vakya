@@ -6,6 +6,6 @@ class vakya_error : public std::exception {
 
 public:
   vakya_error(std::string &&message, size_t err)
-      : message(message + " at loc : " + std::to_string(err)) {}
+      : message("Exception["+std::to_string(err)+"]: "+message) {}
   const char *what() const noexcept { return message.c_str(); }
 };

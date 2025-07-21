@@ -36,19 +36,12 @@ enum class TokenType {
   TT_ON,
   TT_FMT,
   TT_CDN,
-  TT_TBL,
-  TT_PAR,
-  TT_BL,
-  TT_LST,
-  TT_ASC,
-  TT_DSC,
-  TT_GRP,
   TT_ATTR,
   TT_STR,
   TT_USR,
   TT_SRC,
-  TT_PRP,
   TT_META,
+  TT_CTX,
   TT_STRICT
 };
 
