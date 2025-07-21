@@ -4,13 +4,10 @@
 #include <unordered_set>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
-    {"do", TokenType::TT_DO},         {"on", TokenType::TT_ON},
-    {"fmt", TokenType::TT_FMT},       {"cdn", TokenType::TT_CDN},
-    {"table", TokenType::TT_TBL},     {"asc", TokenType::TT_ASC},
-    {"dsc", TokenType::TT_DSC},       {"grp", TokenType::TT_GRP},
-    {"src", TokenType::TT_SRC},       {"prop", TokenType::TT_PRP},
-    {"para", TokenType::TT_PAR},      {"meta", TokenType::TT_META},
-    {"strict", TokenType::TT_STRICT}, {"given", TokenType::TT_CTX}};
+    {"do", TokenType::TT_DO},     {"on", TokenType::TT_ON},
+    {"fmt", TokenType::TT_FMT},   {"cdn", TokenType::TT_CDN},
+    {"meta", TokenType::TT_META}, {"strict", TokenType::TT_STRICT},
+    {"given", TokenType::TT_CTX}};
 
 const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_EQ, " equals to "},
@@ -18,7 +15,10 @@ const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_GT, " greater than "},
     {TokenType::TT_EX, " not "}};
 const std::unordered_map<std::string, std::string> isto_operators = {
-    {"meta", "is"}, {"ascending order", "on"}, {"descending order", "on"}, {"group", "by"}};
+    {"meta", "is"},
+    {"ascending order", "on"},
+    {"descending order", "on"},
+    {"group", "by"}};
 const std::unordered_map<std::string, std::string> macro_map = {
     {"asc", "ascending order"},
     {"dsc", "descending order"},
@@ -86,30 +86,14 @@ std::string toString(TokenType type) {
     return "TT_FMT";
   case TokenType::TT_CDN:
     return "TT_CDN";
-  case TokenType::TT_TBL:
-    return "TT_TBL";
-  case TokenType::TT_ASC:
-    return "TT_ASC";
-  case TokenType::TT_DSC:
-    return "TT_DSC";
-  case TokenType::TT_GRP:
-    return "TT_GRP";
   case TokenType::TT_ATTR:
     return "TT_ATTR";
   case TokenType::TT_STR:
     return "TT_STR";
   case TokenType::TT_USR:
     return "TT_USR";
-  case TokenType::TT_PAR:
-    return "TT_PAR";
-  case TokenType::TT_BL:
-    return "TT_BL";
-  case TokenType::TT_LST:
-    return "TT_LST";
   case TokenType::TT_SRC:
     return "TT_SRC";
-  case TokenType::TT_PRP:
-    return "TT_PRP";
   case TokenType::TT_META:
     return "TT_META";
   case TokenType::TT_CTX:

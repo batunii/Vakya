@@ -219,6 +219,28 @@ AST::parse_braces(std::string &&action_name) {
   return cdn_props;
 }
 
+void AST::update_given_tokens(std::unique_ptr<ops<ls_props<condition>>> src,
+                              ls_props<condition> &dest) {
+  auto ensure_list = [](std::optional<std::vector<condition>> &vec)
+      -> std::optional<std::vector<condition>> & {
+    if (!vec.has_value())
+      vec.emplace();
+    return vec;
+  };
+  if (src->action_props.must.has_value()) {
+    for (const condition &cond : src->action_props.must.value())
+      ensure_list(dest.must)->push_back(cond);
+  }
+  if (src->action_props.should.has_value()) {
+    for (const condition &cond : src->action_props.should.value())
+      ensure_list(dest.should)->push_back(cond);
+  }
+  if (src->action_props.could.has_value()) {
+    for (const condition &cond : src->action_props.could.value())
+      ensure_list(dest.could)->push_back(cond);
+  }
+}
+
 void AST::parse_src() {
   if (get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -237,18 +259,18 @@ void AST::parse_fmt() {
   auto next_token = this->advance_token();
   while (next_token) {
     switch (next_token->t_type) {
-    case TokenType::TT_TBL:
-    case TokenType::TT_BL:
-    case TokenType::TT_PAR:
     case TokenType::TT_USR: {
       this->curr_program->fmt_token->type =
           this->parse_parenthesis(next_token->t_val);
       break;
     }
     case TokenType::TT_NXT:
-    case TokenType::TT_PRP: {
-      this->curr_program->fmt_token->order =
-          this->parse_braces("Order Properties");
+    case TokenType::TT_CTX: {
+      if (!this->curr_program->fmt_token->order)
+        this->curr_program->fmt_token->order =
+            std::make_unique<ops<ls_props<condition>>>();
+      update_given_tokens(this->parse_braces("Order Properties"),
+                          this->curr_program->fmt_token->order->action_props);
       break;
     }
     case TokenType::TT_META: {
@@ -316,8 +338,10 @@ void AST::parse_on() {
       break;
     case TokenType::TT_NXT:
     case TokenType::TT_CTX: {
-      this->curr_program->on_token->action_props =
-          parse_braces("context")->action_props;
+      if (!this->curr_program->on_token->action_props)
+        this->curr_program->on_token->action_props.emplace();
+      update_given_tokens(this->parse_braces("context"),
+                          this->curr_program->on_token->action_props.value());
       break;
     }
     default:
@@ -357,12 +381,6 @@ void AST::start_compiler() {
     case TokenType::TT_FMT: {
       make_fmt();
       parse_fmt();
-      break;
-    }
-    case TokenType::TT_PRP: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->order =
-            this->parse_braces("Order Properties");
       break;
     }
     case TokenType::TT_META: {
