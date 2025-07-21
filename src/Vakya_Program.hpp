@@ -1,7 +1,6 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include "Token_Utils.hpp"
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -88,7 +87,7 @@ operator<<(std::ostream &os,
            const std::optional<std::vector<std::string>> &list) {
   if (list.has_value()) {
     for (const auto &item : list.value()) {
-      os << "\n- " << item;
+      os << "- " << item <<"\n";
     }
   }
   return os;

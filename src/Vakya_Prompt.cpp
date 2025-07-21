@@ -303,12 +303,11 @@ int main() {
     code += line + "\n";
   }
   Lexer lexer(code);
-  std::cout << lexer.make_tokens() << "\n";
+  lexer.make_tokens();
   AST ast(lexer);
   ast.start_compiler();
-  /// ast.print_programs();
-  std::stringstream prompt;
- //  ast.print_programs();
-  std::cout << generate_prompt(prompt, ast.get_program().value());
+  ast.print_programs();
+  // std::stringstream prompt;
+  // std::cout << generate_prompt(prompt, ast.get_program().value());
 }
 */

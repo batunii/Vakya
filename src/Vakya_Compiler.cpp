@@ -1,11 +1,11 @@
 #include "Vakya_Compiler.hpp"
 #include "Token_Utils.hpp"
 #include "Vakya_Error.hpp"
+#include "Vakya_Program.hpp"
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <vector>
-#define LOG(a) std::cout << a << "\n"
 
 std::optional<std::shared_ptr<Program>> AST::get_curr_program() {
   if (size_t program_size = this->program_steps.size())
@@ -219,6 +219,28 @@ AST::parse_braces(std::string &&action_name) {
   return cdn_props;
 }
 
+void AST::update_given_tokens(const ops<ls_props<condition>> &src,
+                              ls_props<condition> &dest) {
+  auto ensure_list = [](std::optional<std::vector<condition>> &vec)
+      -> std::optional<std::vector<condition>> & {
+    if (!vec.has_value())
+      vec.emplace();
+    return vec;
+  };
+
+  auto update_list =
+      [&ensure_list](const std::optional<std::vector<condition>> &src_vec,
+                     std::optional<std::vector<condition>> &dest_vec) -> void {
+    if (src_vec.has_value()) {
+      for (const condition &cond : *src_vec)
+        ensure_list(dest_vec)->push_back(cond);
+    }
+  };
+  update_list(src.action_props.must, dest.must);
+  update_list(src.action_props.should, dest.should);
+  update_list(src.action_props.could, dest.could);
+}
+
 void AST::parse_src() {
   if (get_curr_program().has_value()) {
     this->curr_program = this->get_curr_program().value();
@@ -237,18 +259,21 @@ void AST::parse_fmt() {
   auto next_token = this->advance_token();
   while (next_token) {
     switch (next_token->t_type) {
-    case TokenType::TT_TBL:
-    case TokenType::TT_BL:
-    case TokenType::TT_PAR:
     case TokenType::TT_USR: {
       this->curr_program->fmt_token->type =
           this->parse_parenthesis(next_token->t_val);
       break;
     }
     case TokenType::TT_NXT:
-    case TokenType::TT_PRP: {
-      this->curr_program->fmt_token->order =
-          this->parse_braces("Order Properties");
+    case TokenType::TT_CTX: {
+      if (!this->curr_program->fmt_token->order)
+        this->curr_program->fmt_token->order =
+            std::make_unique<ops<ls_props<condition>>>();
+      [&] {
+        auto parsed_tokens = this->parse_braces("Order Properties");
+        update_given_tokens(*parsed_tokens,
+                            this->curr_program->fmt_token->order->action_props);
+      }();
       break;
     }
     case TokenType::TT_META: {
@@ -316,8 +341,13 @@ void AST::parse_on() {
       break;
     case TokenType::TT_NXT:
     case TokenType::TT_CTX: {
-      this->curr_program->on_token->action_props =
-          parse_braces("context")->action_props;
+      if (!this->curr_program->on_token->action_props)
+        this->curr_program->on_token->action_props.emplace();
+      [&] {
+        auto parsed_token = this->parse_braces("context");
+        update_given_tokens(*parsed_token,
+                            this->curr_program->on_token->action_props.value());
+      }();
       break;
     }
     default:
@@ -340,13 +370,10 @@ void AST::start_compiler() {
   while (curr_token && !encountered_ill) {
     switch (curr_token->t_type) {
     case TokenType::TT_DO: {
-      LOG("Parsing Do");
       parse_do();
-      LOG("Parsed Do");
       break;
     }
     case TokenType::TT_ON: {
-      LOG("Parsing on");
       parse_on();
       break;
     }
@@ -357,12 +384,6 @@ void AST::start_compiler() {
     case TokenType::TT_FMT: {
       make_fmt();
       parse_fmt();
-      break;
-    }
-    case TokenType::TT_PRP: {
-      if (this->curr_program->fmt_token)
-        this->curr_program->fmt_token->order =
-            this->parse_braces("Order Properties");
       break;
     }
     case TokenType::TT_META: {
