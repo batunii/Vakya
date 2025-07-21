@@ -4,10 +4,10 @@
 #include <unordered_set>
 // Keyword token map (reserved words)
 const std::unordered_map<std::string, TokenType> keywords = {
-    {"do", TokenType::TT_DO},     {"on", TokenType::TT_ON},
-    {"fmt", TokenType::TT_FMT},   {"cdn", TokenType::TT_CDN},
-    {"meta", TokenType::TT_META}, {"strict", TokenType::TT_STRICT},
-    {"given", TokenType::TT_CTX}};
+    {"do", TokenType::TT_DO},         {"on", TokenType::TT_ON},
+    {"fmt", TokenType::TT_FMT},       {"cdn", TokenType::TT_CDN},
+    {"src", TokenType::TT_SRC},       {"meta", TokenType::TT_META},
+    {"strict", TokenType::TT_STRICT}, {"given", TokenType::TT_CTX}};
 
 const std::unordered_map<TokenType, std::string> operators_map = {
     {TokenType::TT_EQ, " equals to "},
